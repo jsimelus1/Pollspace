@@ -30,10 +30,14 @@
   header {
     background: linear-gradient(135deg, var(--dark) 0%, var(--dark-mid) 100%);
     border-bottom: 1px solid rgba(201,168,76,0.3);
-    padding: 50px 20px 40px;
-    text-align: center;
+    padding: 30px 20px; /* Reduced padding */
     position: relative;
     overflow: hidden;
+    /* FLEXBOX ADDED */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 30px; /* Space between logo and text */
   }
 
   header::before {
@@ -46,21 +50,40 @@
     pointer-events: none;
   }
 
+  /* LOGO ADDED */
+  .header-logo {
+    width: 150px; /* Adjust size as needed */
+    height: auto;
+    object-fit: contain;
+    z-index: 1; /* Place above the glow */
+  }
+
+  /* WRAPPER ADDED FOR TEXT CONTENT */
+  .header-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start; /* Align text to the left within this container */
+    text-align: left;
+    max-width: 600px;
+    z-index: 1;
+  }
+
   .header-ornament {
     font-size: 11px;
     letter-spacing: 4px;
     text-transform: uppercase;
     color: var(--gold);
-    margin-bottom: 16px;
+    margin-bottom: 12px;
     font-weight: 700;
+    align-self: flex-start;
   }
 
   header h1 {
     font-family: 'Playfair Display', serif;
-    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-size: clamp(2rem, 5vw, 3.2rem); /* Adjusted font size slightly */
     color: var(--gold-light);
     line-height: 1.1;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
   }
 
   header h2 {
@@ -69,21 +92,21 @@
     font-size: clamp(1.2rem, 3vw, 1.8rem);
     color: var(--cream);
     font-weight: 400;
-    margin-bottom: 30px;
+    margin-bottom: 25px;
   }
 
   .event-details {
     display: flex;
-    justify-content: center;
+    justify-content: flex-start; /* Left-align the details */
     gap: 40px;
     flex-wrap: wrap;
-    margin-top: 10px;
+    margin-top: 5px;
   }
 
   .event-detail {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-start; /* Left-align the details */
     gap: 4px;
   }
 
@@ -101,11 +124,27 @@
     font-weight: 300;
   }
 
-  .divider {
-    width: 80px;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--gold), transparent);
-    margin: 30px auto;
+  /* Removed old divider as it's not present in the new layout */
+  .divider { display: none; }
+
+  /* Media query for smaller screens */
+  @media (max-width: 700px) {
+    header {
+      flex-direction: column;
+      text-align: center;
+      gap: 15px;
+      padding: 40px 20px;
+    }
+    .header-content {
+      align-items: center;
+      text-align: center;
+    }
+    .event-details {
+      justify-content: center;
+    }
+    .event-detail {
+      align-items: center;
+    }
   }
 
   /* FORM CONTAINER */
@@ -449,18 +488,24 @@
 <body>
 
 <header>
-  <div class="header-ornament">✦ Club des Alumni du Collège Adventiste du Cap-Haïtien ✦</div>
-  <h1>Journée de Retrouvailles</h1>
-  <h2>Alumni Reunion Day</h2>
-  <div class="divider"></div>
-  <div class="event-details">
-    <div class="event-detail">
-      <span class="label">Date</span>
-      <span class="value">Samedi / Saturday — 5 Septembre / September 5, 2026</span>
-    </div>
-    <div class="event-detail">
-      <span class="label">Lieu / Venue</span>
-      <span class="value">9600 Royal Palm Blvd, Coral Springs, FL 33065</span>
+  <img src="your-uploaded-logo.png" alt="CACH Alumni Logo" class="header-logo">
+  <div class="header-content">
+    <div class="header-ornament">✦ Club des Alumni du Collège Adventiste du Cap-Haïtien ✦</div>
+    <h1>Journée de Retrouvailles</h1>
+    <h2>Alumni Reunion Day • 2026</h2>
+    <div class="event-details">
+      <div class="event-detail">
+        <span class="label">DATE</span>
+        <span class="value">Samedi / Saturday — 5 Septembre 2026</span>
+      </div>
+      <div class="event-detail">
+        <span class="label">LIEU</span>
+        <span class="value">9600 Royal Palm Blvd, Coral Springs, FL</span>
+      </div>
+      <div class="event-detail">
+        <span class="label">FRAIS</span>
+        <span class="value">$50.00 USD par alumni</span>
+      </div>
     </div>
   </div>
 </header>
@@ -480,7 +525,6 @@
 
   <form id="registrationForm" onsubmit="handleSubmit(event)">
 
-    <!-- PERSONAL INFO -->
     <div class="form-section">
       <div class="section-title" id="sec-personal">Informations Personnelles / Personal Information</div>
       <div class="form-row">
@@ -505,7 +549,6 @@
       </div>
     </div>
 
-    <!-- PROMOTION -->
     <div class="form-section">
       <div class="section-title" id="sec-promo">Promotion / Graduating Year</div>
       <div class="form-group">
@@ -516,7 +559,6 @@
       </div>
     </div>
 
-    <!-- T-SHIRT -->
     <div class="form-section">
       <div class="section-title" id="sec-tshirt">Taille de T-Shirt / T-Shirt Size</div>
       <div class="form-group">
@@ -532,7 +574,6 @@
       </div>
     </div>
 
-    <!-- PARTICIPANTS -->
     <div class="form-section">
       <div class="section-title" id="sec-guests">Accompagnateurs / Guests</div>
       <div class="form-group">
@@ -550,7 +591,6 @@
       </div>
     </div>
 
-    <!-- COMMENTS -->
     <div class="form-section">
       <div class="section-title" id="sec-notes">Notes / Commentaires</div>
       <div class="form-group">
