@@ -135,6 +135,7 @@
     .view { display: none; animation: fadeIn 0.2s ease; }
     .view.active { display: block; }
     @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes spin    { to { transform: rotate(360deg); } }
 
     /* ── SECTION HEADER ── */
     .section-header {
@@ -674,23 +675,18 @@
 
 <script>
 // ════════════════════════════════════════════════════════════
-//  DATA LAYER — localStorage persistence
+//  CONFIG — update this one line to point to your backend
 // ════════════════════════════════════════════════════════════
-const STORAGE_KEY = 'pollspace_data';
+// ── Swap this URL after deploying to Render ──────────────────
+// Local dev : 'http://localhost:3001/api'
+// On Render : 'https://your-service-name.onrender.com/api'
+const API_BASE = 'https://your-service-name.onrender.com/api';
 
-function loadData() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : { polls: [], votes: {} };
-  } catch { return { polls: [], votes: {} }; }
-}
+// ════════════════════════════════════════════════════════════
+//  DATA LAYER — Nile DB via REST API
+// ════════════════════════════════════════════════════════════
 
-function saveData(data) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-}
-
-function getData() { return loadData(); }
-
+// Vote tracking still uses localStorage (client-side only, no auth needed)
 function getVotedPolls() {
   try { return JSON.parse(localStorage.getItem('pollspace_voted') || '{}'); }
   catch { return {}; }
@@ -701,26 +697,92 @@ function setVoted(pollId, optionId) {
   localStorage.setItem('pollspace_voted', JSON.stringify(v));
 }
 
-// ── seed demo polls if empty ──
-(function seedIfEmpty() {
-  const d = getData();
-  if (d.polls.length > 0) return;
-  d.polls = [
-    { id: 'demo1', question: 'What is your preferred tech stack for new projects?', desc: '', options: [
-        { id:'d1o1', text:'React + Node.js', votes:42 },
-        { id:'d1o2', text:'Vue + Django',     votes:18 },
-        { id:'d1o3', text:'Next.js + Nile',   votes:31 },
-        { id:'d1o4', text:'Svelte + Go',       votes:9  },
-    ], createdAt: Date.now() - 86400000 },
-    { id: 'demo2', question: 'How often do you deploy to production?', desc: '', options: [
-        { id:'d2o1', text:'Multiple times a day', votes:15 },
-        { id:'d2o2', text:'Once a day',            votes:22 },
-        { id:'d2o3', text:'A few times a week',    votes:38 },
-        { id:'d2o4', text:'Once a week or less',   votes:11 },
-    ], createdAt: Date.now() - 172800000 },
-  ];
-  saveData(d);
-})();
+// ── API helpers ──────────────────────────────────────────────
+
+async function apiGet(path) {
+  const res = await fetch(API_BASE + path);
+  if (!res.ok) throw new Error('Request failed: ' + res.status);
+  return res.json();
+}
+
+async function apiPost(path, body) {
+  const res = await fetch(API_BASE + path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Request failed: ' + res.status);
+  }
+  return res.json();
+}
+
+async function apiDelete(path) {
+  const res = await fetch(API_BASE + path, { method: 'DELETE' });
+  if (!res.ok) throw new Error('Delete failed: ' + res.status);
+  return res.json();
+}
+
+// ── normalize API response → app's internal shape ────────────
+// The API returns { id, question, options: [{id, option_text, vote_count}] }
+// The app uses { id, question, desc, options: [{id, text, votes}] }
+function normalizePoll(raw) {
+  return {
+    id:        raw.id,
+    question:  raw.question,
+    desc:      raw.description || '',
+    createdAt: raw.created_at ? new Date(raw.created_at).getTime() : Date.now(),
+    options:   (raw.options || []).map(o => ({
+      id:    o.id,
+      text:  o.option_text,
+      votes: Number(o.vote_count) || 0,
+    })),
+  };
+}
+
+// ── public data functions used by the rest of the app ────────
+
+// Fetch all polls from Nile and return in app shape
+async function getData() {
+  const raw = await apiGet('/polls');
+  return { polls: raw.map(normalizePoll) };
+}
+
+// Fetch a single poll (used after voting to refresh counts)
+async function getPollById(pollId) {
+  const raw = await apiGet('/polls/' + pollId);
+  return normalizePoll(raw);
+}
+
+// Create a new poll in Nile
+async function createPollInDB(question, desc, optionTexts) {
+  const raw = await apiPost('/polls', { question, description: desc, options: optionTexts });
+  return normalizePoll(raw);
+}
+
+// Submit a vote to Nile
+async function submitVote(pollId, optionId) {
+  return apiPost('/polls/' + pollId + '/vote', { option_id: optionId });
+}
+
+// Delete a poll from Nile
+async function deletePollFromDB(pollId) {
+  return apiDelete('/polls/' + pollId);
+}
+
+// ── loading / error UI helpers ───────────────────────────────
+function showLoading(containerId) {
+  document.getElementById(containerId).innerHTML =
+    `<div style="text-align:center;padding:3rem;color:var(--muted);font-size:13px;">
+       <div style="display:inline-block;width:20px;height:20px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;margin-bottom:0.75rem;"></div>
+       <div>Loading…</div>
+     </div>`;
+}
+function showError(containerId, msg) {
+  document.getElementById(containerId).innerHTML =
+    `<div class="result-msg error" style="margin:1rem 0;">${msg}</div>`;
+}
 
 // ════════════════════════════════════════════════════════════
 //  VIEW MANAGEMENT
@@ -749,11 +811,21 @@ function showAdmin() {
 // ════════════════════════════════════════════════════════════
 //  LIST VIEW
 // ════════════════════════════════════════════════════════════
-function renderList() {
-  const data = getData();
-  const voted = getVotedPolls();
+async function renderList() {
   const container = document.getElementById('poll-list-container');
   const badge = document.getElementById('poll-count-badge');
+  showLoading('poll-list-container');
+
+  let data;
+  try {
+    data = await getData();
+  } catch (e) {
+    badge.textContent = '— polls';
+    showError('poll-list-container', 'Could not load polls. Is your backend running? (' + e.message + ')');
+    return;
+  }
+
+  const voted = getVotedPolls();
 
   badge.textContent = data.polls.length + (data.polls.length === 1 ? ' poll' : ' polls');
 
@@ -799,17 +871,30 @@ function renderList() {
 // ════════════════════════════════════════════════════════════
 let currentPollId = null;
 let selectedOptionId = null;
+let currentPollData = null;
 
-function openPoll(pollId) {
+async function openPoll(pollId) {
   currentPollId = pollId;
   selectedOptionId = null;
-  renderVoteView();
+  currentPollData = null;
   showView('vote');
+  document.getElementById('vote-content').innerHTML =
+    `<div style="text-align:center;padding:3rem;color:var(--muted);font-size:13px;">
+       <div style="display:inline-block;width:20px;height:20px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;margin-bottom:0.75rem;"></div>
+       <div>Loading poll…</div>
+     </div>`;
+  try {
+    currentPollData = await getPollById(pollId);
+    renderVoteView();
+  } catch (e) {
+    document.getElementById('vote-content').innerHTML =
+      `<button class="back-btn" onclick="showList()">← All polls</button>
+       <div class="result-msg error">Failed to load poll: ${e.message}</div>`;
+  }
 }
 
 function renderVoteView() {
-  const data = getData();
-  const poll = data.polls.find(p => p.id === currentPollId);
+  const poll = currentPollData;
   if (!poll) { showList(); return; }
 
   const voted = getVotedPolls();
@@ -870,17 +955,21 @@ function selectOption(optId) {
   renderVoteView();
 }
 
-function castVote() {
+async function castVote() {
   if (!selectedOptionId || !currentPollId) return;
-  const data = getData();
-  const poll = data.polls.find(p => p.id === currentPollId);
-  if (!poll) return;
-  const opt = poll.options.find(o => o.id === selectedOptionId);
-  if (!opt) return;
-  opt.votes++;
-  saveData(data);
-  setVoted(currentPollId, selectedOptionId);
-  renderVoteView();
+  const btn = document.getElementById('vote-submit-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Submitting…'; }
+  try {
+    await submitVote(currentPollId, selectedOptionId);
+    setVoted(currentPollId, selectedOptionId);
+    // Refresh poll from Nile to get accurate vote counts
+    currentPollData = await getPollById(currentPollId);
+    renderVoteView();
+  } catch (e) {
+    const msg = document.getElementById('vote-msg');
+    if (msg) msg.innerHTML = `<div class="result-msg error" style="margin-top:1rem;">${e.message}</div>`;
+    if (btn) { btn.disabled = false; btn.textContent = 'Submit vote'; }
+  }
 }
 
 // ════════════════════════════════════════════════════════════
@@ -930,7 +1019,7 @@ function showMsg(msg, type) {
     `<div class="result-msg ${type}" style="margin-top:1rem;">${msg}</div>`;
 }
 
-function submitPoll() {
+async function submitPoll() {
   const q = document.getElementById('form-question').value.trim();
   const desc = document.getElementById('form-desc').value.trim();
   const opts = [...document.querySelectorAll('.opt-input')]
@@ -939,22 +1028,20 @@ function submitPoll() {
   if (!q) { showMsg('Please enter a question.', 'error'); return; }
   if (opts.length < 2) { showMsg('Add at least 2 options.', 'error'); return; }
 
-  const poll = {
-    id: 'p' + Date.now(),
-    question: q,
-    desc,
-    options: opts.map((text, i) => ({ id: 'o' + Date.now() + i, text, votes: 0 })),
-    createdAt: Date.now(),
-  };
-
-  const data = getData();
-  data.polls.push(poll);
-  saveData(data);
-
-  showMsg('Poll created!', 'success');
-  setTimeout(() => {
-    openPoll(poll.id);
-  }, 600);
+  showMsg('Publishing poll…', 'warn');
+  try {
+    const poll = await createPollInDB(q, desc, opts);
+    showMsg('Poll created!', 'success');
+    setTimeout(() => {
+      currentPollData = poll;
+      currentPollId = poll.id;
+      selectedOptionId = null;
+      showView('vote');
+      renderVoteView();
+    }, 600);
+  } catch (e) {
+    showMsg('Failed to create poll: ' + e.message, 'error');
+  }
 }
 
 // ════════════════════════════════════════════════════════════
@@ -962,9 +1049,18 @@ function submitPoll() {
 // ════════════════════════════════════════════════════════════
 let pendingDeleteId = null;
 
-function renderAdmin() {
-  const data = getData();
+async function renderAdmin() {
   const container = document.getElementById('admin-polls-container');
+  showLoading('admin-polls-container');
+
+  let data;
+  try {
+    data = await getData();
+  } catch (e) {
+    showError('admin-polls-container', 'Could not load polls: ' + e.message);
+    return;
+  }
+
   if (!data.polls.length) {
     container.innerHTML = `<div class="empty-state"><div class="empty-icon">🔧</div><h3>No polls to manage</h3><p>Create a poll first</p></div>`;
     return;
@@ -999,10 +1095,16 @@ function closeModal() {
   pendingDeleteId = null;
 }
 
-function deletePoll(pollId) {
-  const data = getData();
-  data.polls = data.polls.filter(p => p.id !== pollId);
-  saveData(data);
+async function deletePoll(pollId) {
+  const btn = document.getElementById('confirm-delete-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Deleting…'; }
+  try {
+    await deletePollFromDB(pollId);
+  } catch (e) {
+    alert('Delete failed: ' + e.message);
+    if (btn) { btn.disabled = false; btn.textContent = 'Delete'; }
+    return;
+  }
   closeModal();
   renderAdmin();
 }
