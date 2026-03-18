@@ -1,489 +1,1030 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CACH Alumni — Journée de Retrouvailles 2026</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --gold: #C9A84C;
-    --gold-light: #E8C97A;
-    --dark: #0D1B2A;
-    --dark-mid: #1A2E45;
-    --cream: #F5F0E8;
-    --cream-dark: #EDE5D0;
-    --text: #2C2C2C;
-    --red: #8B1A1A;
-  }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Polls</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg:       #0d0e12;
+      --surface:  #15161c;
+      --surface2: #1c1d26;
+      --border:   rgba(255,255,255,0.07);
+      --border2:  rgba(255,255,255,0.13);
+      --text:     #f0f0f2;
+      --muted:    #7a7b8a;
+      --accent:   #c8f04e;
+      --accent2:  #9de84a;
+      --danger:   #ff5c5c;
+      --success:  #4effa0;
+      --radius:   14px;
+      --radius-sm:8px;
+    }
 
-  body {
-    background-color: var(--dark);
-    color: var(--cream);
-    font-family: 'Lato', sans-serif;
-    min-height: 100vh;
-  }
+    html, body {
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+    }
 
-  /* --- HEADER SECTION (MATCHING SCREENSHOT) --- */
-  header {
-    background: linear-gradient(135deg, var(--dark) 0%, var(--dark-mid) 100%);
-    border-bottom: 1px solid rgba(201,168,76,0.3);
-    padding: 60px 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 40px;
-    position: relative;
-    overflow: hidden;
-  }
+    /* ── LAYOUT ── */
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
 
-  header::before {
-    content: '';
-    position: absolute;
-    top: -80px; left: 50%;
-    transform: translateX(-50%);
-    width: 600px; height: 500px;
-    background: radial-gradient(circle, rgba(201,168,76,0.08) 0%, transparent 70%);
-    pointer-events: none;
-  }
+    header {
+      padding: 1.5rem 2rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      background: rgba(13,14,18,0.85);
+      backdrop-filter: blur(12px);
+      z-index: 10;
+    }
 
-  .header-logo {
-    width: 300px; /* Size of your circular logo */
-    height: auto;
-    z-index: 2;
-  }
+    .logo {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
 
-  .header-content {
-    text-align: left;
-    max-width: 700px;
-    z-index: 2;
-  }
+    .logo-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 12px var(--accent);
+      animation: pulse 2.5s ease-in-out infinite;
+    }
 
-  .header-ornament {
-    font-size: 11px;
-    letter-spacing: 4px;
-    text-transform: uppercase;
-    color: var(--gold);
-    margin-bottom: 12px;
-    font-weight: 700;
-  }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.6; transform: scale(0.8); }
+    }
 
-  header h1 {
-    font-family: 'Playfair Display', serif;
-    font-size: clamp(2.5rem, 6vw, 4rem);
-    color: var(--gold-light);
-    line-height: 1;
-    margin-bottom: 5px;
-  }
+    .header-actions { display: flex; gap: 10px; align-items: center; }
 
-  header h2 {
-    font-family: 'Playfair Display', serif;
-    font-style: italic;
-    font-size: clamp(1.4rem, 3vw, 2rem);
-    color: var(--cream);
-    font-weight: 400;
-    margin-bottom: 30px;
-  }
+    main {
+      padding: 2.5rem 1rem;
+      max-width: 620px;
+      margin: 0 auto;
+      width: 100%;
+    }
 
-  .event-details-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 25px;
-  }
+    footer {
+      padding: 1.25rem 2rem;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+    }
 
-  .detail-item .label {
-    font-size: 10px;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: var(--gold);
-    font-weight: 700;
-    display: block;
-    margin-bottom: 4px;
-  }
+    /* ── BUTTONS ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 0.6rem 1.2rem;
+      border-radius: var(--radius-sm);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid var(--border2);
+      background: var(--surface2);
+      color: var(--text);
+      transition: all 0.18s;
+    }
+    .btn:hover { background: var(--surface); border-color: rgba(255,255,255,0.2); }
+    .btn:active { transform: scale(0.97); }
 
-  .detail-item .value {
-    font-size: 16px;
-    color: var(--cream);
-    font-weight: 300;
-  }
+    .btn-accent {
+      background: var(--accent);
+      color: #0d0e12;
+      border-color: var(--accent);
+      font-weight: 600;
+    }
+    .btn-accent:hover { background: var(--accent2); border-color: var(--accent2); }
 
-  /* --- FORM CONTAINER & ELEMENTS --- */
-  .container {
-    max-width: 720px;
-    margin: 0 auto;
-    padding: 40px 20px 80px;
-  }
+    .btn-ghost {
+      background: none;
+      border-color: transparent;
+      color: var(--muted);
+      padding: 0.5rem 0.75rem;
+    }
+    .btn-ghost:hover { color: var(--text); background: var(--surface2); border-color: transparent; }
 
-  .fee-banner {
-    background: linear-gradient(135deg, var(--red), #6B1111);
-    border: 1px solid rgba(201,168,76,0.4);
-    border-radius: 4px;
-    padding: 18px 24px;
-    text-align: center;
-    margin-bottom: 40px;
-  }
+    .btn-sm { padding: 0.4rem 0.85rem; font-size: 12px; }
+    .btn-full { width: 100%; justify-content: center; }
 
-  .fee-banner .fee-amount {
-    font-family: 'Playfair Display', serif;
-    font-size: 2.2rem;
-    color: var(--cream);
-    font-weight: 700;
-  }
+    /* ── VIEWS ── */
+    .view { display: none; animation: fadeIn 0.2s ease; }
+    .view.active { display: block; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
 
-  .lang-toggle {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-    margin-bottom: 30px;
-  }
+    /* ── SECTION HEADER ── */
+    .section-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 1.75rem;
+    }
+    .section-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+    }
+    .section-title span { color: var(--accent); }
+    .count-badge {
+      font-size: 11px;
+      font-weight: 600;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 3px 10px;
+      border-radius: 999px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
 
-  .lang-btn {
-    background: transparent;
-    border: 1px solid var(--gold);
-    color: var(--gold);
-    padding: 6px 16px;
-    font-size: 11px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: 0.2s;
-  }
+    /* ── POLL CARDS ── */
+    .poll-grid { display: flex; flex-direction: column; gap: 12px; }
 
-  .lang-btn.active {
-    background: var(--gold);
-    color: var(--dark);
-    font-weight: 700;
-  }
+    .poll-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.4rem 1.5rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .poll-card::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      background: var(--accent);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .poll-card:hover { border-color: var(--border2); transform: translateX(3px); }
+    .poll-card:hover::before { opacity: 1; }
 
-  .form-section { margin-bottom: 36px; }
+    .poll-card-question {
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.75rem;
+      line-height: 1.35;
+    }
 
-  .section-title {
-    font-size: 10px;
-    letter-spacing: 4px;
-    text-transform: uppercase;
-    color: var(--gold);
-    font-weight: 700;
-    margin-bottom: 20px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid rgba(201,168,76,0.2);
-  }
+    .poll-card-meta {
+      display: flex;
+      gap: 14px;
+      font-size: 12px;
+      color: var(--muted);
+      align-items: center;
+    }
+    .poll-card-meta .dot { width: 3px; height: 3px; border-radius: 50%; background: var(--border2); }
 
-  .form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-  }
+    .poll-card-arrow {
+      position: absolute;
+      right: 1.5rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      font-size: 18px;
+      transition: all 0.2s;
+    }
+    .poll-card:hover .poll-card-arrow { color: var(--accent); transform: translateY(-50%) translateX(3px); }
 
-  .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-bottom: 20px;
-  }
+    /* ── EMPTY STATE ── */
+    .empty-state {
+      text-align: center;
+      padding: 4rem 1rem;
+      color: var(--muted);
+    }
+    .empty-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      opacity: 0.4;
+    }
+    .empty-state h3 {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.1rem;
+      color: var(--text);
+      margin-bottom: 0.4rem;
+    }
+    .empty-state p { font-size: 13px; }
 
-  .form-group label {
-    font-size: 11px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--gold-light);
-    font-weight: 700;
-  }
+    /* ── POLL VOTING VIEW ── */
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      font-family: inherit;
+      margin-bottom: 2rem;
+      transition: color 0.15s;
+    }
+    .back-btn:hover { color: var(--text); }
 
-  .form-group label .sublabel {
-    display: block;
-    font-size: 10px;
-    text-transform: none;
-    font-weight: 300;
-    color: rgba(245,240,232,0.5);
-  }
+    .poll-question {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.25;
+      margin-bottom: 0.6rem;
+    }
+    .poll-subtitle {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 2rem;
+    }
 
-  input, select, textarea {
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(201,168,76,0.3);
-    color: var(--cream);
-    padding: 13px 16px;
-    font-family: 'Lato', sans-serif;
-    outline: none;
-    transition: 0.2s;
-  }
+    .options-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 1.5rem; }
 
-  input:focus, select:focus, textarea:focus {
-    border-color: var(--gold);
-    background: rgba(201,168,76,0.07);
-  }
+    .option-btn {
+      width: 100%;
+      text-align: left;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.2rem;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      font-family: inherit;
+      transition: border-color 0.15s;
+    }
+    .option-btn:hover:not(:disabled) { border-color: var(--border2); }
+    .option-btn.selected { border-color: var(--accent); }
+    .option-btn:disabled { cursor: default; }
 
-  /* PARTICIPANTS */
-  .participant-row {
-    display: grid;
-    grid-template-columns: auto 1fr auto;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 10px;
-  }
+    .option-bar {
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      background: rgba(200, 240, 78, 0.08);
+      transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      border-radius: var(--radius);
+    }
+    .option-bar.winning { background: rgba(200, 240, 78, 0.13); }
 
-  .participant-num {
-    width: 28px;
-    height: 28px;
-    border: 1px solid var(--gold);
-    color: var(--gold);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    font-weight: 700;
-  }
+    .option-inner {
+      position: relative;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
 
-  .add-btn, .remove-btn {
-    background: transparent;
-    padding: 10px;
-    cursor: pointer;
-    border-radius: 2px;
-    width: 44px;
-    height: 44px;
-  }
+    .option-text {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+      line-height: 1.4;
+    }
 
-  .add-btn { border: 1px dashed var(--gold); color: var(--gold); }
-  .remove-btn { border: 1px solid var(--red); color: var(--red); }
+    .option-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .option-pct {
+      font-family: 'Syne', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--accent);
+      min-width: 38px;
+      text-align: right;
+    }
+    .option-votes {
+      font-size: 11px;
+      color: var(--muted);
+      min-width: 45px;
+      text-align: right;
+    }
+    .option-check {
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px;
+      color: #0d0e12;
+      flex-shrink: 0;
+    }
 
-  /* T-SHIRT SIZES */
-  .tshirt-grid {
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 8px;
-  }
+    .vote-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 1.5rem;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .total-votes {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .total-votes strong { color: var(--text); font-weight: 500; }
 
-  .tshirt-option input { display: none; }
-  .tshirt-option label {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 48px;
-    border: 1px solid rgba(201,168,76,0.3);
-    color: rgba(245,240,232,0.6);
-    cursor: pointer;
-    font-weight: 700;
-  }
+    .result-msg {
+      font-size: 13px;
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      margin-top: 1rem;
+    }
+    .result-msg.success { background: rgba(78, 255, 160, 0.08); color: var(--success); border: 1px solid rgba(78,255,160,0.2); }
+    .result-msg.error   { background: rgba(255, 92, 92, 0.08);  color: var(--danger);  border: 1px solid rgba(255,92,92,0.2); }
+    .result-msg.warn    { background: rgba(200,240,78,0.07);     color: var(--accent);  border: 1px solid rgba(200,240,78,0.2); }
 
-  .tshirt-option input:checked + label {
-    background: var(--gold);
-    color: var(--dark);
-    border-color: var(--gold);
-  }
+    /* ── CREATE FORM ── */
+    .form-group { margin-bottom: 1.25rem; }
+    .form-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .form-input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .form-input:focus { border-color: var(--accent); }
+    .form-input::placeholder { color: var(--muted); }
 
-  /* SUBMIT */
-  .submit-section { text-align: center; margin-top: 50px; }
-  .submit-btn {
-    background: linear-gradient(135deg, var(--gold), var(--gold-light));
-    border: none;
-    color: var(--dark);
-    padding: 18px 60px;
-    font-weight: 700;
-    letter-spacing: 4px;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: 0.3s;
-  }
+    textarea.form-input { resize: vertical; min-height: 80px; }
 
-  .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(201,168,76,0.35); }
+    .option-inputs { display: flex; flex-direction: column; gap: 8px; }
+    .option-input-row { display: flex; gap: 8px; align-items: center; }
+    .option-input-row .form-input { flex: 1; }
 
-  .success-msg {
-    display: none;
-    background: rgba(0,100,0,0.1);
-    border: 1px solid rgba(100,200,100,0.3);
-    padding: 40px;
-    text-align: center;
-  }
+    .remove-opt-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--muted);
+      width: 34px; height: 34px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.15s;
+      font-size: 16px;
+    }
+    .remove-opt-btn:hover { border-color: var(--danger); color: var(--danger); background: rgba(255,92,92,0.07); }
 
-  .success-msg.show { display: block; }
+    .add-opt-btn {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 13px; color: var(--muted);
+      background: none;
+      border: 1px dashed var(--border2);
+      border-radius: var(--radius-sm);
+      padding: 8px 14px;
+      cursor: pointer;
+      width: 100%; margin-top: 4px;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+    .add-opt-btn:hover { color: var(--accent); border-color: rgba(200,240,78,0.4); }
 
-  footer {
-    text-align: center;
-    padding: 40px;
-    border-top: 1px solid rgba(201,168,76,0.1);
-    font-size: 12px;
-    color: rgba(245,240,232,0.3);
-  }
+    .form-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 2rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--border);
+    }
 
-  /* MOBILE RESPONSIVENESS */
-  @media (max-width: 768px) {
-    header { flex-direction: column; text-align: center; gap: 20px; }
-    .header-content { text-align: center; }
-    .event-details-grid { grid-template-columns: 1fr; gap: 15px; }
-    .form-row { grid-template-columns: 1fr; }
-    .tshirt-grid { grid-template-columns: repeat(3, 1fr); }
-  }
-</style>
+    /* ── ADMIN VIEW ── */
+    .admin-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 1rem;
+    }
+    .admin-poll-header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .admin-poll-q {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+      flex: 1;
+      line-height: 1.35;
+    }
+    .admin-poll-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .admin-mini-bar {
+      padding: 0.75rem 1.25rem;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .mini-opt {
+      font-size: 11px;
+      padding: 3px 10px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: var(--muted);
+    }
+    .mini-opt strong { color: var(--accent); }
+
+    /* ── TABS ── */
+    .tabs {
+      display: flex;
+      gap: 2px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 3px;
+      margin-bottom: 2rem;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 0.55rem 1rem;
+      background: none;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted);
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+    .tab-btn.active {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    /* ── MISC ── */
+    .divider { height: 1px; background: var(--border); margin: 1.5rem 0; }
+
+    .tag {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 0.04em;
+      padding: 3px 9px;
+      border-radius: 999px;
+    }
+    .tag-active { background: rgba(200,240,78,0.1); color: var(--accent); border: 1px solid rgba(200,240,78,0.25); }
+    .tag-closed { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 1rem;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius);
+      padding: 1.75rem;
+      width: 100%;
+      max-width: 420px;
+      animation: fadeIn 0.2s ease;
+    }
+    .modal h3 {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.1rem;
+      margin-bottom: 0.5rem;
+    }
+    .modal p { font-size: 13px; color: var(--muted); margin-bottom: 1.25rem; }
+    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+    @media (max-width: 480px) {
+      header { padding: 1rem; }
+      main { padding: 1.5rem 1rem; }
+      .section-title { font-size: 1.3rem; }
+      .poll-question { font-size: 1.25rem; }
+      .vote-footer { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
 </head>
 <body>
+<div class="app">
 
-<header>
-  <img src="Final_Logo.png" alt="CACH Alumni Logo" class="header-logo">
-  
-  <div class="header-content">
-    <div class="header-ornament">✦ CLUB DES ALUMNI DU COLLÈGE ADVENTISTE DU CAP-HAÏTIEN ✦</div>
-    <h1>Reunion Day</h1>
-    <h2>Alumni Reunion Day • 2026</h2>
-    
-    <div class="event-details-grid">
-      <div class="detail-item">
-        <span class="label">DATE</span>
-        <span class="value">Saturday — September 5, 2026</span>
-      </div>
-      <div class="detail-item">
-        <span class="label">PLACE</span>
-        <span class="value">9600 Royal Palm Blvd, Coral Springs, FL</span>
-      </div>
-      <div class="detail-item">
-        <span class="label">COSTS</span>
-        <span class="value">$50.00 USD per alumni</span>
-      </div>
+  <!-- HEADER -->
+  <header>
+    <div class="logo">
+      <div class="logo-dot"></div>
+      PollSpace
     </div>
-  </div>
-</header>
+    <div class="header-actions">
+      <button class="btn btn-ghost btn-sm" onclick="showAdmin()">Admin</button>
+      <button class="btn btn-accent btn-sm" onclick="showCreate()">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        New poll
+      </button>
+    </div>
+  </header>
 
-<div class="container">
-  <div class="lang-toggle">
-    <button class="lang-btn active" onclick="setLang('fr')">Français</button>
-    <button class="lang-btn" onclick="setLang('en')">English</button>
-  </div>
+  <!-- MAIN -->
+  <main>
 
-  <div class="fee-banner">
-    <div class="fee-label" id="fee-label">Frais d'inscription / Registration Fee</div>
-    <div class="fee-amount">$50.00 USD</div>
-    <div class="fee-note" id="fee-note">Par alumni — les accompagnateurs peuvent avoir des frais supplémentaires</div>
-  </div>
-
-  <form id="registrationForm" onsubmit="handleSubmit(event)">
-    <div class="form-section">
-      <div class="section-title" id="sec-personal">Informations Personnelles / Personal Information</div>
-      <div class="form-row">
-        <div class="form-group">
-          <label id="lbl-firstName">Prénom <span class="sublabel">First Name</span></label>
-          <input type="text" name="firstName" placeholder="Jean" required>
+    <!-- LIST VIEW -->
+    <div id="view-list" class="view active">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Active <span>polls</span></div>
+          <div style="font-size:13px;color:var(--muted);margin-top:4px;">Cast your vote and see live results</div>
         </div>
-        <div class="form-group">
-          <label id="lbl-lastName">Nom de famille <span class="sublabel">Last Name</span></label>
-          <input type="text" name="lastName" placeholder="Pierre" required>
-        </div>
+        <div class="count-badge" id="poll-count-badge">0 polls</div>
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label id="lbl-email">Courriel <span class="sublabel">Email Address</span></label>
-          <input type="email" name="email" placeholder="jean.pierre@email.com" required>
-        </div>
-        <div class="form-group">
-          <label id="lbl-phone">Téléphone <span class="sublabel">Phone Number</span></label>
-          <input type="tel" name="phone" placeholder="+1 (954) 000-0000">
-        </div>
+      <div class="poll-grid" id="poll-list-container">
+        <!-- injected by JS -->
       </div>
     </div>
 
-    <div class="form-section">
-      <div class="section-title" id="sec-promo">Promotion / Graduating Year</div>
+    <!-- VOTE VIEW -->
+    <div id="view-vote" class="view">
+      <button class="back-btn" onclick="showList()">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 11L5 7L9 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        All polls
+      </button>
+      <div id="vote-content"><!-- injected --></div>
+    </div>
+
+    <!-- CREATE VIEW -->
+    <div id="view-create" class="view">
+      <button class="back-btn" onclick="showList()">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 11L5 7L9 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        All polls
+      </button>
+      <div class="section-title" style="margin-bottom:0.4rem;">Create a <span style="color:var(--accent)">poll</span></div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:2rem;">Ask anything — results update live for everyone</p>
+
       <div class="form-group">
-        <label id="lbl-promotion">Année de diplôme au C.A.C.H. <span class="sublabel">Year you graduated</span></label>
-        <select id="promotion" name="promotion" required>
-          <option value="" disabled selected id="opt-promo-default">— Sélectionnez votre promotion —</option>
-        </select>
+        <label class="form-label">Question</label>
+        <input id="form-question" class="form-input" type="text" placeholder="What would you like to ask?" maxlength="200" />
       </div>
-    </div>
 
-    <div class="form-section">
-      <div class="section-title" id="sec-tshirt">Taille de T-Shirt / T-Shirt Size</div>
-      <div class="tshirt-grid">
-        <div class="tshirt-option"><input type="radio" name="tshirt" id="xs" value="XS" required><label for="xs">XS</label></div>
-        <div class="tshirt-option"><input type="radio" name="tshirt" id="sm" value="S"><label for="sm">S</label></div>
-        <div class="tshirt-option"><input type="radio" name="tshirt" id="md" value="M"><label for="md">M</label></div>
-        <div class="tshirt-option"><input type="radio" name="tshirt" id="lg" value="L"><label for="lg">L</label></div>
-        <div class="tshirt-option"><input type="radio" name="tshirt" id="xl" value="XL"><label for="xl">XL</label></div>
-        <div class="tshirt-option"><input type="radio" name="tshirt" id="xxl" value="XXL"><label for="xxl">XXL</label></div>
+      <div class="form-group">
+        <label class="form-label">Description <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted);font-size:11px;">(optional)</span></label>
+        <textarea id="form-desc" class="form-input" placeholder="Add more context…" rows="2"></textarea>
       </div>
-    </div>
 
-    <div class="form-section">
-      <div class="section-title" id="sec-guests">Accompagnateurs / Guests</div>
-      <div id="participantsGrid">
-        <div class="participant-row" id="p-row-1">
-          <div class="participant-num">1</div>
-          <input type="text" name="participant_1" placeholder="Nom complet / Full name">
-          <button type="button" class="add-btn" onclick="addParticipant()">+</button>
+      <div class="form-group">
+        <label class="form-label">Options</label>
+        <div class="option-inputs" id="option-inputs">
+          <div class="option-input-row">
+            <input class="form-input opt-input" type="text" placeholder="Option 1" />
+          </div>
+          <div class="option-input-row">
+            <input class="form-input opt-input" type="text" placeholder="Option 2" />
+          </div>
         </div>
+        <button class="add-opt-btn" id="add-opt-btn" onclick="addOptionInput()">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          Add option
+        </button>
+      </div>
+
+      <div id="form-msg"></div>
+
+      <div class="form-actions">
+        <button class="btn" onclick="showList()">Cancel</button>
+        <button class="btn btn-accent" onclick="submitPoll()">
+          Publish poll
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M6 2l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
       </div>
     </div>
 
-    <div class="submit-section">
-      <button type="submit" class="submit-btn" id="btn-submit">S'inscrire maintenant</button>
+    <!-- ADMIN VIEW -->
+    <div id="view-admin" class="view">
+      <button class="back-btn" onclick="showList()">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 11L5 7L9 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        All polls
+      </button>
+      <div class="section-title" style="margin-bottom:0.4rem;">Admin <span style="color:var(--accent)">panel</span></div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:2rem;">Manage your polls</p>
+      <div id="admin-polls-container"><!-- injected --></div>
     </div>
-  </form>
 
-  <div class="success-msg" id="successMsg">
-    <h3 id="success-title">Inscription Enregistrée!</h3>
-    <p id="success-body">Merci de vous être inscrit(e) à la Journée de Retrouvailles 2026.</p>
+  </main>
+
+  <footer>
+    PollSpace &mdash; standalone poll app &bull; data stored in your browser
+  </footer>
+</div>
+
+<!-- DELETE CONFIRM MODAL -->
+<div class="modal-overlay" id="delete-modal">
+  <div class="modal">
+    <h3>Delete poll?</h3>
+    <p>This will permanently remove the poll and all its votes. This action cannot be undone.</p>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn" id="confirm-delete-btn" style="border-color:var(--danger);color:var(--danger);">Delete</button>
+    </div>
   </div>
 </div>
 
-<footer>
-  © 2026 Club des Alumni du Collège Adventiste du Cap-Haïtien (C.A.C.H.)
-</footer>
-
 <script>
-// Year Populator
-const sel = document.getElementById('promotion');
-for (let y = 2025; y >= 1960; y--) {
-  const opt = document.createElement('option');
-  opt.value = y; opt.textContent = y;
-  sel.appendChild(opt);
+// ════════════════════════════════════════════════════════════
+//  DATA LAYER — localStorage persistence
+// ════════════════════════════════════════════════════════════
+const STORAGE_KEY = 'pollspace_data';
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : { polls: [], votes: {} };
+  } catch { return { polls: [], votes: {} }; }
 }
 
-// Translations
-const translations = {
-  fr: {
-    'fee-label': 'Frais d\'inscription / Registration Fee',
-    'sec-personal': 'Informations Personnelles / Personal Information',
-    'btn-submit': 'S\'inscrire maintenant',
-    'success-title': 'Inscription Enregistrée!',
-    'success-body': 'Merci de vous être inscrit(e) à la Journée de Retrouvailles 2026.'
-  },
-  en: {
-    'fee-label': 'Registration Fee / Frais d\'inscription',
-    'sec-personal': 'Personal Information / Informations Personnelles',
-    'btn-submit': 'Register Now',
-    'success-title': 'Registration Received!',
-    'success-body': 'Thank you for registering for the Alumni Reunion Day 2026.'
-  }
-};
-
-function setLang(lang) {
-  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent.toLowerCase().includes(lang === 'fr' ? 'fr' : 'en')));
-  const t = translations[lang];
-  for (const [id, txt] of Object.entries(t)) {
-    const el = document.getElementById(id);
-    if (el) el.innerText = txt;
-  }
+function saveData(data) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
 
-// Participant Logic
-let count = 1;
-function addParticipant() {
-  const grid = document.getElementById('participantsGrid');
-  const lastRow = document.getElementById(`p-row-${count}`);
-  lastRow.querySelector('.add-btn').outerHTML = `<button type="button" class="remove-btn" onclick="this.parentElement.remove()">-</button>`;
-  
-  count++;
+function getData() { return loadData(); }
+
+function getVotedPolls() {
+  try { return JSON.parse(localStorage.getItem('pollspace_voted') || '{}'); }
+  catch { return {}; }
+}
+function setVoted(pollId, optionId) {
+  const v = getVotedPolls();
+  v[pollId] = optionId;
+  localStorage.setItem('pollspace_voted', JSON.stringify(v));
+}
+
+// ── seed demo polls if empty ──
+(function seedIfEmpty() {
+  const d = getData();
+  if (d.polls.length > 0) return;
+  d.polls = [
+    { id: 'demo1', question: 'What is your preferred tech stack for new projects?', desc: '', options: [
+        { id:'d1o1', text:'React + Node.js', votes:42 },
+        { id:'d1o2', text:'Vue + Django',     votes:18 },
+        { id:'d1o3', text:'Next.js + Nile',   votes:31 },
+        { id:'d1o4', text:'Svelte + Go',       votes:9  },
+    ], createdAt: Date.now() - 86400000 },
+    { id: 'demo2', question: 'How often do you deploy to production?', desc: '', options: [
+        { id:'d2o1', text:'Multiple times a day', votes:15 },
+        { id:'d2o2', text:'Once a day',            votes:22 },
+        { id:'d2o3', text:'A few times a week',    votes:38 },
+        { id:'d2o4', text:'Once a week or less',   votes:11 },
+    ], createdAt: Date.now() - 172800000 },
+  ];
+  saveData(d);
+})();
+
+// ════════════════════════════════════════════════════════════
+//  VIEW MANAGEMENT
+// ════════════════════════════════════════════════════════════
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + id).classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function showList() {
+  renderList();
+  showView('list');
+}
+
+function showCreate() {
+  resetForm();
+  showView('create');
+}
+
+function showAdmin() {
+  renderAdmin();
+  showView('admin');
+}
+
+// ════════════════════════════════════════════════════════════
+//  LIST VIEW
+// ════════════════════════════════════════════════════════════
+function renderList() {
+  const data = getData();
+  const voted = getVotedPolls();
+  const container = document.getElementById('poll-list-container');
+  const badge = document.getElementById('poll-count-badge');
+
+  badge.textContent = data.polls.length + (data.polls.length === 1 ? ' poll' : ' polls');
+
+  if (!data.polls.length) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📊</div>
+        <h3>No polls yet</h3>
+        <p>Create your first poll to get started</p>
+        <br>
+        <button class="btn btn-accent" onclick="showCreate()" style="margin:0 auto;">Create poll</button>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = data.polls.slice().reverse().map(poll => {
+    const total = poll.options.reduce((s, o) => s + o.votes, 0);
+    const hasVoted = voted[poll.id];
+    return `
+      <div class="poll-card" onclick="openPoll('${poll.id}')">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;">
+          <div style="flex:1;">
+            <div class="poll-card-question">${escHtml(poll.question)}</div>
+            ${poll.desc ? `<div style="font-size:12px;color:var(--muted);margin-bottom:0.75rem;">${escHtml(poll.desc)}</div>` : ''}
+            <div class="poll-card-meta">
+              <span>${poll.options.length} options</span>
+              <div class="dot"></div>
+              <span>${total} vote${total !== 1 ? 's' : ''}</span>
+              <div class="dot"></div>
+              ${hasVoted
+                ? `<span style="color:var(--accent);">✓ Voted</span>`
+                : `<span>Vote now</span>`}
+            </div>
+          </div>
+          <div class="poll-card-arrow">›</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════════════════
+//  VOTE VIEW
+// ════════════════════════════════════════════════════════════
+let currentPollId = null;
+let selectedOptionId = null;
+
+function openPoll(pollId) {
+  currentPollId = pollId;
+  selectedOptionId = null;
+  renderVoteView();
+  showView('vote');
+}
+
+function renderVoteView() {
+  const data = getData();
+  const poll = data.polls.find(p => p.id === currentPollId);
+  if (!poll) { showList(); return; }
+
+  const voted = getVotedPolls();
+  const myVote = voted[poll.id];
+  const hasVoted = !!myVote;
+  const total = poll.options.reduce((s, o) => s + o.votes, 0);
+  const maxVotes = Math.max(...poll.options.map(o => o.votes), 1);
+
+  const optionsHtml = poll.options.map(opt => {
+    const pct = total > 0 ? Math.round((opt.votes / total) * 100) : 0;
+    const isWinner = opt.votes === maxVotes && total > 0;
+    const isSelected = !hasVoted && selectedOptionId === opt.id;
+    const isMyVote = myVote === opt.id;
+
+    return `
+      <button class="option-btn${isSelected ? ' selected' : ''}"
+        onclick="${hasVoted ? '' : `selectOption('${opt.id}')`}"
+        ${hasVoted ? 'disabled' : ''}>
+        ${hasVoted ? `<div class="option-bar${isWinner ? ' winning' : ''}" style="width:${pct}%"></div>` : ''}
+        <div class="option-inner">
+          <span class="option-text">${escHtml(opt.text)}</span>
+          <div class="option-right">
+            ${hasVoted ? `<span class="option-pct">${pct}%</span>` : ''}
+            ${hasVoted ? `<span class="option-votes">${opt.votes} vote${opt.votes !== 1 ? 's' : ''}</span>` : ''}
+            ${isSelected ? `<div class="option-check">✓</div>` : ''}
+            ${isMyVote ? `<div class="option-check">✓</div>` : ''}
+          </div>
+        </div>
+      </button>`;
+  }).join('');
+
+  const footerHtml = hasVoted
+    ? `<div class="vote-footer">
+        <div class="total-votes"><strong>${total}</strong> total vote${total !== 1 ? 's' : ''}</div>
+        <span class="tag tag-active">✓ Vote recorded</span>
+      </div>
+      <div class="result-msg success">Your vote has been counted. Results are shown above.</div>`
+    : `<div class="vote-footer">
+        <div class="total-votes"><strong>${total}</strong> vote${total !== 1 ? 's' : ''} so far</div>
+        <button class="btn btn-accent" id="vote-submit-btn"
+          onclick="castVote()"
+          ${selectedOptionId ? '' : 'disabled'}
+          style="${selectedOptionId ? '' : 'opacity:0.45;cursor:default;'}">
+          Submit vote
+        </button>
+      </div>`;
+
+  document.getElementById('vote-content').innerHTML = `
+    <div class="poll-question">${escHtml(poll.question)}</div>
+    ${poll.desc ? `<div class="poll-subtitle">${escHtml(poll.desc)}</div>` : `<div class="poll-subtitle">${poll.options.length} options · pick one</div>`}
+    <div class="options-list">${optionsHtml}</div>
+    <div id="vote-footer-area">${footerHtml}</div>
+    <div id="vote-msg"></div>`;
+}
+
+function selectOption(optId) {
+  selectedOptionId = optId;
+  renderVoteView();
+}
+
+function castVote() {
+  if (!selectedOptionId || !currentPollId) return;
+  const data = getData();
+  const poll = data.polls.find(p => p.id === currentPollId);
+  if (!poll) return;
+  const opt = poll.options.find(o => o.id === selectedOptionId);
+  if (!opt) return;
+  opt.votes++;
+  saveData(data);
+  setVoted(currentPollId, selectedOptionId);
+  renderVoteView();
+}
+
+// ════════════════════════════════════════════════════════════
+//  CREATE FORM
+// ════════════════════════════════════════════════════════════
+let optCount = 2;
+
+function resetForm() {
+  document.getElementById('form-question').value = '';
+  document.getElementById('form-desc').value = '';
+  document.getElementById('form-msg').innerHTML = '';
+  optCount = 2;
+  document.getElementById('option-inputs').innerHTML = `
+    <div class="option-input-row">
+      <input class="form-input opt-input" type="text" placeholder="Option 1" />
+    </div>
+    <div class="option-input-row">
+      <input class="form-input opt-input" type="text" placeholder="Option 2" />
+    </div>`;
+}
+
+function addOptionInput() {
+  if (optCount >= 8) return;
+  optCount++;
   const row = document.createElement('div');
-  row.className = 'participant-row';
-  row.id = `p-row-${count}`;
-  row.innerHTML = `<div class="participant-num">${count}</div><input type="text" name="participant_${count}" placeholder="Full name"><button type="button" class="add-btn" onclick="addParticipant()">+</button>`;
-  grid.appendChild(row);
+  row.className = 'option-input-row';
+  row.innerHTML = `
+    <input class="form-input opt-input" type="text" placeholder="Option ${optCount}" />
+    <button class="remove-opt-btn" onclick="removeOpt(this)">×</button>`;
+  document.getElementById('option-inputs').appendChild(row);
+  if (optCount >= 8) document.getElementById('add-opt-btn').style.display = 'none';
+  row.querySelector('input').focus();
 }
 
-function handleSubmit(e) {
-  e.preventDefault();
-  document.getElementById('registrationForm').style.display = 'none';
-  document.getElementById('successMsg').classList.add('show');
+function removeOpt(btn) {
+  btn.closest('.option-input-row').remove();
+  optCount--;
+  document.getElementById('add-opt-btn').style.display = '';
+  // Re-label placeholders
+  document.querySelectorAll('.opt-input').forEach((inp, i) => {
+    if (!inp.value) inp.placeholder = `Option ${i + 1}`;
+  });
 }
+
+function showMsg(msg, type) {
+  document.getElementById('form-msg').innerHTML =
+    `<div class="result-msg ${type}" style="margin-top:1rem;">${msg}</div>`;
+}
+
+function submitPoll() {
+  const q = document.getElementById('form-question').value.trim();
+  const desc = document.getElementById('form-desc').value.trim();
+  const opts = [...document.querySelectorAll('.opt-input')]
+    .map(i => i.value.trim()).filter(Boolean);
+
+  if (!q) { showMsg('Please enter a question.', 'error'); return; }
+  if (opts.length < 2) { showMsg('Add at least 2 options.', 'error'); return; }
+
+  const poll = {
+    id: 'p' + Date.now(),
+    question: q,
+    desc,
+    options: opts.map((text, i) => ({ id: 'o' + Date.now() + i, text, votes: 0 })),
+    createdAt: Date.now(),
+  };
+
+  const data = getData();
+  data.polls.push(poll);
+  saveData(data);
+
+  showMsg('Poll created!', 'success');
+  setTimeout(() => {
+    openPoll(poll.id);
+  }, 600);
+}
+
+// ════════════════════════════════════════════════════════════
+//  ADMIN
+// ════════════════════════════════════════════════════════════
+let pendingDeleteId = null;
+
+function renderAdmin() {
+  const data = getData();
+  const container = document.getElementById('admin-polls-container');
+  if (!data.polls.length) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">🔧</div><h3>No polls to manage</h3><p>Create a poll first</p></div>`;
+    return;
+  }
+  container.innerHTML = data.polls.slice().reverse().map(poll => {
+    const total = poll.options.reduce((s, o) => s + o.votes, 0);
+    return `
+      <div class="admin-panel">
+        <div class="admin-poll-header">
+          <div class="admin-poll-q">${escHtml(poll.question)}</div>
+          <div class="admin-poll-actions">
+            <button class="btn btn-sm btn-ghost" onclick="openPoll('${poll.id}')">View</button>
+            <button class="btn btn-sm" style="border-color:rgba(255,92,92,0.3);color:var(--danger);" onclick="confirmDelete('${poll.id}')">Delete</button>
+          </div>
+        </div>
+        <div class="admin-mini-bar">
+          <span class="mini-opt"><strong>${total}</strong> votes total</span>
+          ${poll.options.map(o => `<span class="mini-opt">${escHtml(o.text)}: <strong>${o.votes}</strong></span>`).join('')}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function confirmDelete(pollId) {
+  pendingDeleteId = pollId;
+  document.getElementById('delete-modal').classList.add('open');
+  document.getElementById('confirm-delete-btn').onclick = () => deletePoll(pollId);
+}
+
+function closeModal() {
+  document.getElementById('delete-modal').classList.remove('open');
+  pendingDeleteId = null;
+}
+
+function deletePoll(pollId) {
+  const data = getData();
+  data.polls = data.polls.filter(p => p.id !== pollId);
+  saveData(data);
+  closeModal();
+  renderAdmin();
+}
+
+// ════════════════════════════════════════════════════════════
+//  UTILS
+// ════════════════════════════════════════════════════════════
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+// Close modal on overlay click
+document.getElementById('delete-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// ── Initial render ──
+renderList();
 </script>
 </body>
 </html>
