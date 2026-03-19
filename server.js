@@ -1,40 +1,36 @@
 // PollSpace - server.js
-// Render-ready: PostgreSQL + Web Service on one platform
-//
-// Environment variables to set in Render dashboard:
-//   DATABASE_URL  -> paste your Render Internal Database URL
-//                    (Render sets this automatically if you link a DB)
-//   PORT          -> set automatically by Render, do not touch
-//
-// Deploy steps:
-//   1. Push server.js + package.json to GitHub
-//   2. Create a Render PostgreSQL database (free tier)
-//   3. Create a Render Web Service pointing to your repo
-//   4. Add DATABASE_URL env var (Internal Database URL from step 2)
-//   5. Build command: npm install   |   Start command: node server.js
+// Render PostgreSQL + Web Service
+// Frontend: GitHub Pages or Netlify
 
 const express = require('express');
 const { Pool } = require('pg');
-const cors = require('cors');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 // -----------------------------------------------------------------
-// CORS - open to all origins so any frontend can call this API.
-// This is the fix for "Failed to fetch" errors from Netlify.
-// Once you go to production, replace '*' with your exact domain:
-//   app.use(cors({ origin: 'https://mypollapp.netlify.app' }));
+// CORS - set manually on every response so no browser can block it.
+// The cors npm package has edge cases with some CDN/proxy setups.
+// This approach works universally with GitHub Pages + Render.
 // -----------------------------------------------------------------
-app.use(cors({ origin: '*' }));
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept');
+  res.setHeader('Access-Control-Max-Age', '86400'); // cache preflight 24h
 
-// Handle preflight OPTIONS requests sent by browsers before POST/DELETE
-app.options('*', cors({ origin: '*' }));
+  // Respond immediately to OPTIONS preflight — do not pass to routes
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(204);
+  }
+
+  next();
+});
 
 app.use(express.json());
 
 // -----------------------------------------------------------------
-// DATABASE - Render Postgres requires SSL with rejectUnauthorized false
+// DATABASE
 // -----------------------------------------------------------------
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -42,7 +38,7 @@ const pool = new Pool({
 });
 
 // -----------------------------------------------------------------
-// AUTO SCHEMA - creates tables on first boot, safe to run repeatedly
+// AUTO SCHEMA
 // -----------------------------------------------------------------
 async function initSchema() {
   const client = await pool.connect();
@@ -81,7 +77,7 @@ async function initSchema() {
 }
 
 // -----------------------------------------------------------------
-// HELPER - fetch one poll with all options and vote counts
+// HELPER
 // -----------------------------------------------------------------
 async function queryPollById(id) {
   const { rows } = await pool.query(`
@@ -113,23 +109,17 @@ async function queryPollById(id) {
 // ROUTES
 // -----------------------------------------------------------------
 
-// Root route - fixes "Cannot GET /" error when opening Render URL
+// Root - confirms service is up when you open the Render URL
 app.get('/', (req, res) => {
   res.json({
     name: 'PollSpace API',
     status: 'running',
-    endpoints: {
-      health:     'GET  /api/health',
-      listPolls:  'GET  /api/polls',
-      getPoll:    'GET  /api/polls/:id',
-      createPoll: 'POST /api/polls',
-      vote:       'POST /api/polls/:id/vote',
-      deletePoll: 'DELETE /api/polls/:id',
-    }
+    health: '/api/health',
+    polls: '/api/polls',
   });
 });
 
-// Health check - ping this from UptimeRobot every 5 min to prevent sleep
+// Health check - ping from UptimeRobot every 5 min to prevent sleep
 app.get('/api/health', async (req, res) => {
   try {
     await pool.query('SELECT 1');
@@ -139,7 +129,7 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-// GET /api/polls - list all polls with options and vote counts
+// GET /api/polls
 app.get('/api/polls', async (req, res) => {
   try {
     const { rows } = await pool.query(`
@@ -166,25 +156,24 @@ app.get('/api/polls', async (req, res) => {
     `);
     res.json(rows);
   } catch (e) {
-    console.error('GET /polls error:', e.message);
+    console.error('GET /polls:', e.message);
     res.status(500).json({ error: e.message });
   }
 });
 
-// GET /api/polls/:id - single poll (refreshed after voting)
+// GET /api/polls/:id
 app.get('/api/polls/:id', async (req, res) => {
   try {
     const poll = await queryPollById(req.params.id);
     if (!poll) return res.status(404).json({ error: 'Poll not found' });
     res.json(poll);
   } catch (e) {
-    console.error('GET /polls/:id error:', e.message);
+    console.error('GET /polls/:id:', e.message);
     res.status(500).json({ error: e.message });
   }
 });
 
-// POST /api/polls - create a new poll
-// Body: { question: string, description?: string, options: string[] }
+// POST /api/polls
 app.post('/api/polls', async (req, res) => {
   const { question, description = '', options } = req.body;
 
@@ -219,15 +208,14 @@ app.post('/api/polls', async (req, res) => {
     res.status(201).json({ ...poll, options: insertedOptions });
   } catch (e) {
     await client.query('ROLLBACK');
-    console.error('POST /polls error:', e.message);
+    console.error('POST /polls:', e.message);
     res.status(500).json({ error: e.message });
   } finally {
     client.release();
   }
 });
 
-// POST /api/polls/:id/vote - cast a vote (one per IP per poll)
-// Body: { option_id: string }
+// POST /api/polls/:id/vote
 app.post('/api/polls/:id/vote', async (req, res) => {
   const { option_id } = req.body;
   const voter_ip = (
@@ -254,12 +242,12 @@ app.post('/api/polls/:id/vote', async (req, res) => {
 
     res.json({ success: true });
   } catch (e) {
-    console.error('POST /vote error:', e.message);
+    console.error('POST /vote:', e.message);
     res.status(500).json({ error: e.message });
   }
 });
 
-// DELETE /api/polls/:id - remove a poll and all its data
+// DELETE /api/polls/:id
 app.delete('/api/polls/:id', async (req, res) => {
   try {
     const result = await pool.query(
@@ -270,7 +258,7 @@ app.delete('/api/polls/:id', async (req, res) => {
       return res.status(404).json({ error: 'Poll not found' });
     res.json({ success: true, deleted: req.params.id });
   } catch (e) {
-    console.error('DELETE /polls error:', e.message);
+    console.error('DELETE /polls:', e.message);
     res.status(500).json({ error: e.message });
   }
 });
