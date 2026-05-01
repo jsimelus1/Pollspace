@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PollSpace — Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:       #0d0e12;
+      --surface:  #15161c;
+      --surface2: #1c1d26;
+      --border:   rgba(255,255,255,0.07);
+      --border2:  rgba(255,255,255,0.13);
+      --text:     #f0f0f2;
+      --muted:    #7a7b8a;
+      --accent:   #c8f04e;
+      --accent2:  #9de84a;
+      --danger:   #ff5c5c;
+      --success:  #4effa0;
+      --radius:   14px;
+      --radius-sm:8px;
+      --chart-1: #c8f04e;
+      --chart-2: #4effa0;
+      --chart-3: #4eb8ff;
+      --chart-4: #ff9f4e;
+      --chart-5: #c44eff;
+      --chart-6: #ff4e7a;
+      --chart-7: #4effea;
+      --chart-8: #ffe44e;
+    }
+    html, body { min-height: 100vh; background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 15px; }
+    @keyframes fadeIn  { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes spin    { to { transform: rotate(360deg); } }
+    @keyframes shimmer { 0%,100% { opacity:.4 } 50% { opacity:.9 } }
+
+    /* ── HEADER ── */
+    header {
+      padding: 1.25rem 2rem;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0;
+      background: rgba(13,14,18,0.9);
+      backdrop-filter: blur(12px);
+      z-index: 10;
+    }
+    .logo { font-family:'Syne',sans-serif; font-size:1.1rem; font-weight:700; letter-spacing:-.02em; display:flex; align-items:center; gap:10px; }
+    .logo-dot { width:8px; height:8px; border-radius:50%; background:var(--accent); box-shadow:0 0 12px var(--accent); }
+    .header-right { display:flex; gap:10px; align-items:center; }
+    .btn { display:inline-flex; align-items:center; gap:6px; padding:.55rem 1.1rem; border-radius:var(--radius-sm); font-family:'DM Sans',sans-serif; font-size:13px; font-weight:500; cursor:pointer; border:1px solid var(--border2); background:var(--surface2); color:var(--text); text-decoration:none; transition:all .18s; }
+    .btn:hover { background:var(--surface); border-color:rgba(255,255,255,.2); }
+    .btn-accent { background:var(--accent); color:#0d0e12; border-color:var(--accent); font-weight:600; }
+    .btn-accent:hover { background:var(--accent2); border-color:var(--accent2); }
+
+    /* ── LAYOUT ── */
+    main { max-width: 1100px; margin: 0 auto; padding: 2.5rem 1.5rem; }
+
+    /* ── PAGE HEADER ── */
+    .page-header { margin-bottom: 2.5rem; }
+    .page-title { font-family:'Syne',sans-serif; font-size:2rem; font-weight:700; letter-spacing:-.03em; line-height:1.1; }
+    .page-title span { color:var(--accent); }
+    .page-sub { font-size:14px; color:var(--muted); margin-top:.5rem; }
+
+    /* ── STATS ROW ── */
+    .stats-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin-bottom:2.5rem; }
+    .stat-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1.25rem 1.5rem; }
+    .stat-label { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-bottom:.4rem; }
+    .stat-value { font-family:'Syne',sans-serif; font-size:2rem; font-weight:700; color:var(--accent); line-height:1; }
+    .stat-desc { font-size:12px; color:var(--muted); margin-top:.3rem; }
+
+    /* ── POLL CARDS ── */
+    .polls-grid { display:flex; flex-direction:column; gap:1.5rem; }
+
+    .poll-report {
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      overflow:hidden;
+      animation: fadeIn .3s ease;
+    }
+
+    .poll-report-header {
+      padding:1.5rem;
+      border-bottom:1px solid var(--border);
+      display:flex; align-items:flex-start; justify-content:space-between; gap:1rem;
+    }
+    .poll-report-question { font-family:'Syne',sans-serif; font-size:1.1rem; font-weight:700; line-height:1.3; }
+    .poll-report-meta { font-size:12px; color:var(--muted); margin-top:.4rem; display:flex; gap:12px; flex-wrap:wrap; }
+    .concluded-tag { font-size:11px; font-weight:600; padding:3px 10px; border-radius:999px; background:rgba(200,240,78,.1); color:var(--accent); border:1px solid rgba(200,240,78,.25); white-space:nowrap; }
+
+    /* ── TABS ── */
+    .report-tabs { display:flex; border-bottom:1px solid var(--border); padding:0 1.5rem; gap:2px; }
+    .report-tab { padding:.75rem 1rem; font-size:13px; font-weight:500; color:var(--muted); cursor:pointer; border:none; background:none; font-family:inherit; border-bottom:2px solid transparent; margin-bottom:-1px; transition:all .15s; }
+    .report-tab.active { color:var(--text); border-bottom-color:var(--accent); }
+
+    .report-body { padding:1.5rem; }
+
+    /* ── CHARTS ── */
+    .charts-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; }
+    @media(max-width:680px) { .charts-grid { grid-template-columns:1fr; } }
+
+    .chart-card { background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:1.25rem; }
+    .chart-title { font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-bottom:1rem; }
+    .chart-wrap { position:relative; height:220px; }
+
+    /* ── RESULTS TABLE ── */
+    .results-table { width:100%; border-collapse:collapse; margin-top:1rem; }
+    .results-table th { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); text-align:left; padding:.5rem .75rem; border-bottom:1px solid var(--border); }
+    .results-table td { padding:.65rem .75rem; font-size:13px; border-bottom:1px solid var(--border); }
+    .results-table tr:last-child td { border-bottom:none; }
+    .results-table .winner { color:var(--accent); font-weight:600; }
+    .bar-cell { width:40%; }
+    .mini-bar-wrap { height:6px; background:var(--surface); border-radius:999px; overflow:hidden; }
+    .mini-bar { height:100%; border-radius:999px; background:var(--accent); transition:width .5s ease; }
+
+    /* ── AI INSIGHTS ── */
+    .insights-area { min-height:120px; }
+    .insights-loading {
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      gap:1rem; padding:2.5rem; color:var(--muted); font-size:13px;
+    }
+    .spinner { width:24px; height:24px; border:2px solid var(--border2); border-top-color:var(--accent); border-radius:50%; animation:spin .7s linear infinite; }
+    .ai-badge {
+      display:inline-flex; align-items:center; gap:6px;
+      font-size:11px; font-weight:600; padding:3px 10px;
+      border-radius:999px; background:rgba(78,184,255,.08);
+      color:#4eb8ff; border:1px solid rgba(78,184,255,.2);
+      margin-bottom:1.25rem;
+    }
+    .insights-content { font-size:14px; line-height:1.75; color:var(--text); }
+    .insights-content h2,
+    .insights-content h3 { font-family:'Syne',sans-serif; font-size:.85rem; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:.06em; margin:1.25rem 0 .5rem; }
+    .insights-content h2:first-child,
+    .insights-content h3:first-child { margin-top:0; }
+    .insights-content ul { padding-left:1.25rem; }
+    .insights-content li { margin-bottom:.35rem; }
+    .insights-content strong { color:var(--text); font-weight:600; }
+    .insights-content p { margin-bottom:.75rem; }
+    .insights-meta { font-size:11px; color:var(--muted); margin-top:1.25rem; padding-top:.75rem; border-top:1px solid var(--border); }
+    .regen-btn { margin-top:.75rem; font-size:12px; }
+
+    /* ── EMPTY / ERROR ── */
+    .empty-state { text-align:center; padding:5rem 1rem; color:var(--muted); }
+    .empty-icon { font-size:3rem; opacity:.4; margin-bottom:1rem; }
+    .empty-state h3 { font-family:'Syne',sans-serif; font-size:1.1rem; color:var(--text); margin-bottom:.4rem; }
+    .empty-state p { font-size:13px; }
+    .error-msg { background:rgba(255,92,92,.08); color:var(--danger); border:1px solid rgba(255,92,92,.2); border-radius:var(--radius-sm); padding:10px 14px; font-size:13px; margin:1rem 0; }
+
+    /* ── LOADING SKELETON ── */
+    .skeleton { background:var(--surface2); border-radius:6px; animation:shimmer 1.5s ease infinite; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    PollSpace
+  </div>
+  <div class="header-right">
+    <a href="/" class="btn">← Back to polls</a>
+  </div>
+</header>
+
+<main>
+  <div class="page-header">
+    <div class="page-title">Stakeholder <span>Dashboard</span></div>
+    <div class="page-sub">Analysis and recommendations for concluded polls</div>
+  </div>
+
+  <div class="stats-row" id="stats-row">
+    <div class="stat-card"><div class="stat-label">Concluded Polls</div><div class="stat-value skeleton" style="width:40px;height:32px;"></div></div>
+    <div class="stat-card"><div class="stat-label">Total Votes Cast</div><div class="stat-value skeleton" style="width:60px;height:32px;"></div></div>
+    <div class="stat-card"><div class="stat-label">Avg Votes/Poll</div><div class="stat-value skeleton" style="width:50px;height:32px;"></div></div>
+    <div class="stat-card"><div class="stat-label">Most Recent Poll</div><div class="stat-value skeleton" style="width:80px;height:32px;font-size:1rem;"></div></div>
+  </div>
+
+  <div id="polls-container">
+    <div style="text-align:center;padding:3rem;color:var(--muted);font-size:13px;">
+      <div style="display:inline-block;width:22px;height:22px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin-bottom:.75rem;"></div>
+      <div>Loading concluded polls...</div>
+    </div>
+  </div>
+</main>
+
+<script>
+const API = '/api';
+const CHART_COLORS = ['#c8f04e','#4effa0','#4eb8ff','#ff9f4e','#c44eff','#ff4e7a','#4effea','#ffe44e'];
+
+// ── Fetch concluded polls ─────────────────────────────────────
+async function loadDashboard() {
+  try {
+    const res = await fetch(API + '/polls/concluded');
+    if (!res.ok) throw new Error('Request failed: ' + res.status);
+    const polls = await res.json();
+    renderStats(polls);
+    renderPolls(polls);
+  } catch (e) {
+    document.getElementById('polls-container').innerHTML =
+      `<div class="error-msg">Failed to load dashboard: ${e.message}</div>`;
+  }
+}
+
+// ── Stats row ─────────────────────────────────────────────────
+function renderStats(polls) {
+  const totalVotes = polls.reduce((s, p) => s + p.total_votes, 0);
+  const avg = polls.length ? Math.round(totalVotes / polls.length) : 0;
+  const latest = polls.length ? new Date(polls[0].end_date).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '—';
+
+  document.getElementById('stats-row').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-label">Concluded Polls</div>
+      <div class="stat-value">${polls.length}</div>
+      <div class="stat-desc">Available for analysis</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total Votes Cast</div>
+      <div class="stat-value">${totalVotes.toLocaleString()}</div>
+      <div class="stat-desc">Across all polls</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Avg Votes / Poll</div>
+      <div class="stat-value">${avg}</div>
+      <div class="stat-desc">Participation rate</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Most Recent</div>
+      <div class="stat-value" style="font-size:1.4rem;">${latest}</div>
+      <div class="stat-desc">Last concluded poll</div>
+    </div>
+  `;
+}
+
+// ── Render all poll reports ───────────────────────────────────
+function renderPolls(polls) {
+  const container = document.getElementById('polls-container');
+
+  if (!polls.length) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📊</div>
+        <h3>No concluded polls yet</h3>
+        <p>Polls will appear here once their end date has passed.</p>
+        <br>
+        <a href="/" class="btn btn-accent" style="display:inline-flex;">Create a poll</a>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = polls.map((poll, idx) => `
+    <div class="poll-report" id="report-${poll.id}">
+      <div class="poll-report-header">
+        <div>
+          <div class="poll-report-question">${escHtml(poll.question)}</div>
+          <div class="poll-report-meta">
+            <span>${poll.total_votes} votes</span>
+            <span>·</span>
+            <span>${poll.options.length} options</span>
+            <span>·</span>
+            <span>Ended ${new Date(poll.end_date).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</span>
+          </div>
+        </div>
+        <span class="concluded-tag">Concluded</span>
+      </div>
+
+      <div class="report-tabs">
+        <button class="report-tab active" onclick="switchTab('${poll.id}','charts',this)">Charts</button>
+        <button class="report-tab" onclick="switchTab('${poll.id}','insights',this)">AI Insights</button>
+      </div>
+
+      <div class="report-body">
+        <div id="tab-charts-${poll.id}">
+          ${renderChartsTab(poll)}
+        </div>
+        <div id="tab-insights-${poll.id}" style="display:none;">
+          <div class="insights-area" id="insights-area-${poll.id}">
+            <div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:13px;">
+              Click "Load Insights" to generate AI analysis for this poll.
+            </div>
+            <div style="text-align:center;">
+              <button class="btn btn-accent" onclick="loadInsights('${poll.id}')">
+                ✦ Load AI Insights
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  // Draw charts after DOM is ready
+  polls.forEach(poll => drawCharts(poll));
+}
+
+// ── Charts tab HTML ───────────────────────────────────────────
+function renderChartsTab(poll) {
+  const maxVotes = Math.max(...poll.options.map(o => o.vote_count), 1);
+  const sorted = [...poll.options].sort((a,b) => b.vote_count - a.vote_count);
+
+  const tableRows = sorted.map((opt, i) => {
+    const pct = poll.total_votes > 0 ? ((opt.vote_count / poll.total_votes) * 100).toFixed(1) : '0.0';
+    const isWinner = i === 0 && opt.vote_count > 0;
+    return `
+      <tr>
+        <td class="${isWinner ? 'winner' : ''}">${escHtml(opt.option_text)}${isWinner ? ' 🏆' : ''}</td>
+        <td>${opt.vote_count}</td>
+        <td>${pct}%</td>
+        <td class="bar-cell">
+          <div class="mini-bar-wrap">
+            <div class="mini-bar" style="width:${pct}%"></div>
+          </div>
+        </td>
+      </tr>`;
+  }).join('');
+
+  return `
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-title">Vote Distribution</div>
+        <div class="chart-wrap"><canvas id="chart-bar-${poll.id}"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Share Breakdown</div>
+        <div class="chart-wrap"><canvas id="chart-doughnut-${poll.id}"></canvas></div>
+      </div>
+    </div>
+    <table class="results-table" style="margin-top:1.5rem;">
+      <thead><tr><th>Option</th><th>Votes</th><th>Share</th><th>Distribution</th></tr></thead>
+      <tbody>${tableRows}</tbody>
+    </table>
+  `;
+}
+
+// ── Draw Chart.js charts ──────────────────────────────────────
+function drawCharts(poll) {
+  const labels = poll.options.map(o => o.option_text);
+  const data   = poll.options.map(o => o.vote_count);
+  const colors = poll.options.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]);
+
+  const gridColor  = 'rgba(255,255,255,0.05)';
+  const tickColor  = '#7a7b8a';
+  const fontFamily = "'DM Sans', sans-serif";
+
+  // Bar chart
+  const barCtx = document.getElementById('chart-bar-' + poll.id);
+  if (barCtx) {
+    new Chart(barCtx, {
+      type: 'bar',
+      data: { labels, datasets: [{ data, backgroundColor: colors, borderRadius: 6, borderSkipped: false }] },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { color: gridColor }, ticks: { color: tickColor, font: { family: fontFamily, size: 11 }, maxRotation: 30 } },
+          y: { grid: { color: gridColor }, ticks: { color: tickColor, font: { family: fontFamily, size: 11 }, precision: 0 }, beginAtZero: true }
+        }
+      }
+    });
+  }
+
+  // Doughnut chart
+  const dCtx = document.getElementById('chart-doughnut-' + poll.id);
+  if (dCtx) {
+    new Chart(dCtx, {
+      type: 'doughnut',
+      data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 2, borderColor: '#15161c' }] },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        cutout: '65%',
+        plugins: {
+          legend: {
+            position: 'right',
+            labels: { color: tickColor, font: { family: fontFamily, size: 11 }, padding: 12, boxWidth: 12 }
+          }
+        }
+      }
+    });
+  }
+}
+
+// ── Tab switching ─────────────────────────────────────────────
+function switchTab(pollId, tab, btn) {
+  document.querySelectorAll(`#report-${pollId} .report-tab`).forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-charts-'   + pollId).style.display = tab === 'charts'   ? '' : 'none';
+  document.getElementById('tab-insights-' + pollId).style.display = tab === 'insights' ? '' : 'none';
+}
+
+// ── Load AI Insights ──────────────────────────────────────────
+async function loadInsights(pollId, force = false) {
+  const area = document.getElementById('insights-area-' + pollId);
+  area.innerHTML = `
+    <div class="insights-loading">
+      <div class="spinner"></div>
+      <div>Generating AI analysis...</div>
+      <div style="font-size:11px;color:var(--muted);">This may take a few seconds</div>
+    </div>`;
+
+  try {
+    const url = API + '/polls/' + pollId + '/insights' + (force ? '?regenerate=1' : '');
+    const res = await fetch(url);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed: ' + res.status);
+    }
+    const { insights, cached, generated_at } = await res.json();
+    renderInsights(pollId, insights, cached, generated_at);
+  } catch (e) {
+    area.innerHTML = `
+      <div class="error-msg">${e.message}</div>
+      <button class="btn regen-btn" onclick="loadInsights('${pollId}')">Try again</button>`;
+  }
+}
+
+// ── Render markdown-ish insights ─────────────────────────────
+function renderInsights(pollId, text, cached, generatedAt) {
+  const area = document.getElementById('insights-area-' + pollId);
+
+  // Convert basic markdown to HTML
+  const html = text
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/^#{1,3}\s+(.+)$/gm, '<h3>$1</h3>')
+    .replace(/^\d+\.\s+\*\*(.+?)\*\*(.*)$/gm, '<h3>$1</h3><p>$2</p>')
+    .replace(/^[-*]\s+(.+)$/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/^(?!<[hup])/gm, '')
+    .replace(/<p><\/p>/g, '');
+
+  const genDate = new Date(generatedAt).toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+
+  area.innerHTML = `
+    <div class="ai-badge">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1l1.5 3 3.5.5-2.5 2.5.5 3.5L6 9l-3 1.5.5-3.5L1 4.5 4.5 4z" fill="currentColor"/></svg>
+      AI Analysis by Claude
+    </div>
+    <div class="insights-content">${html}</div>
+    <div class="insights-meta">
+      ${cached ? 'Cached analysis' : 'Freshly generated'} · ${genDate}
+      <button class="btn regen-btn" onclick="loadInsights('${pollId}', true)" style="margin-left:12px;">Regenerate</button>
+    </div>
+  `;
+}
+
+// ── Utils ─────────────────────────────────────────────────────
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Init ──────────────────────────────────────────────────────
+loadDashboard();
+</script>
+</body>
+</html>
