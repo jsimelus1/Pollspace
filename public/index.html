@@ -201,6 +201,15 @@
     .img-clear-btn{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.7);border:1px solid var(--border2);border-radius:6px;color:var(--text);width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;z-index:2}
     .img-uploading{font-size:12px;color:var(--accent);margin-top:.5rem;display:flex;align-items:center;gap:6px;justify-content:center}
 
+    /* Question blocks */
+    .question-block{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem;position:relative}
+    .question-block-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
+    .question-block-label{font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.06em}
+    .remove-question-btn{background:none;border:1px solid rgba(224,85,85,.3);border-radius:6px;color:var(--danger);font-size:12px;padding:4px 10px;cursor:pointer;font-family:inherit;transition:all .15s}
+    .remove-question-btn:hover{background:rgba(224,85,85,.08)}
+    .add-question-btn{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--accent);background:none;border:1.5px dashed var(--border2);border-radius:var(--radius);padding:10px 16px;cursor:pointer;width:100%;margin:0 0 1.25rem;font-family:inherit;transition:all .2s;justify-content:center}
+    .add-question-btn:hover{border-color:var(--accent);background:rgba(212,175,55,.04)}
+
     /* ══════════════════════════════════════
        ADMIN VIEW
     ══════════════════════════════════════ */
@@ -320,45 +329,45 @@
       All polls
     </button>
     <div style="font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;letter-spacing:-.03em;margin-bottom:.35rem;">Create a <span style="color:var(--accent)">poll</span></div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:1.75rem;">Ask anything — results update live for everyone</p>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:1.75rem;">Add one or more questions — each with its own options and image</p>
 
+    <!-- Poll-level fields -->
     <div class="form-group">
-      <label class="form-label">Question <span style="color:var(--danger)">*</span></label>
-      <input id="form-question" class="form-input" type="text" placeholder="What would you like to ask?" maxlength="200"/>
+      <label class="form-label">Poll Title <span style="color:var(--danger)">*</span></label>
+      <input id="form-title" class="form-input" type="text" placeholder="Give your poll a name (shown on the card)" maxlength="200"/>
     </div>
     <div class="form-group">
       <label class="form-label">Description <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted);font-size:11px;">(optional)</span></label>
-      <textarea id="form-desc" class="form-input" placeholder="Add context…" rows="2"></textarea>
+      <textarea id="form-desc" class="form-input" placeholder="Add context about this poll…" rows="2"></textarea>
     </div>
     <div class="form-group">
       <label class="form-label">Cover Image <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted);font-size:11px;">(optional)</span></label>
-      <div class="img-upload-area" id="img-upload-area" onclick="document.getElementById('img-file-input').click()">
+      <div class="img-upload-area" id="img-upload-area" onclick="triggerImageUpload()">
         <div id="img-placeholder">
           <div class="img-upload-placeholder">🖼️</div>
-          <div class="img-upload-hint">Click to upload an image · PNG, JPG, GIF up to 5MB</div>
+          <div class="img-upload-hint">Click to upload · PNG, JPG, GIF up to 5MB</div>
         </div>
         <img id="img-preview" class="img-upload-preview" style="display:none" alt="Preview"/>
         <button class="img-clear-btn" id="img-clear-btn" style="display:none" onclick="clearImage(event)">✕</button>
-        <input type="file" id="img-file-input" class="img-upload-input" accept="image/*" onchange="handleImageSelect(event)" style="display:none"/>
       </div>
+      <input type="file" id="img-file-input" accept="image/*" onchange="handleImageSelect(event)" style="position:absolute;left:-9999px;opacity:0;width:1px;height:1px"/>
       <div id="img-status"></div>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Options <span style="color:var(--danger)">*</span></label>
-      <div class="option-inputs" id="option-inputs">
-        <div class="option-input-row"><input class="form-input opt-input" type="text" placeholder="Option 1"/></div>
-        <div class="option-input-row"><input class="form-input opt-input" type="text" placeholder="Option 2"/></div>
-      </div>
-      <button class="add-opt-btn" id="add-opt-btn" onclick="addOptionInput()">
-        <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-        Add option
-      </button>
     </div>
     <div class="form-group">
       <label class="form-label">End Date & Time <span style="color:var(--danger)">*</span></label>
       <input id="form-enddate" class="form-input" type="datetime-local"/>
       <div style="font-size:11px;color:var(--muted);margin-top:5px;">Poll closes automatically. Results move to your dashboard.</div>
     </div>
+
+    <!-- Questions container -->
+    <div id="questions-container"></div>
+
+    <!-- Add question button -->
+    <button class="add-question-btn" onclick="addQuestion()">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Add another question
+    </button>
+
     <div id="form-msg"></div>
     <div class="form-actions">
       <button class="btn" onclick="showList()">Cancel</button>
@@ -470,11 +479,16 @@ async function deletePollFromDB(id){ return apiDelete('/polls/'+id); }
 // ════════════════════════════════════
 let pendingImageUrl = '';
 
+function triggerImageUpload(){
+  document.getElementById('img-file-input').click();
+}
+
 async function handleImageSelect(e){
   const file = e.target.files[0];
   if(!file) return;
   if(file.size > 5*1024*1024){ showImgStatus('Image must be under 5MB','error'); return; }
 
+  // Show local preview immediately
   const reader = new FileReader();
   reader.onload = ev => {
     document.getElementById('img-preview').src = ev.target.result;
@@ -493,23 +507,31 @@ async function handleImageSelect(e){
       fd.append('upload_preset', CLOUDINARY_PRESET);
       const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`,{method:'POST',body:fd});
       const data = await res.json();
-      if(data.secure_url){ pendingImageUrl = data.secure_url; showImgStatus('Image ready ✓','success'); }
-      else throw new Error(data.error?.message||'Upload failed');
-    } catch(err){ showImgStatus('Upload failed: '+err.message,'error'); pendingImageUrl=''; }
+      if(data.secure_url){
+        pendingImageUrl = data.secure_url;
+        showImgStatus('✓ Image uploaded successfully','success');
+      } else {
+        throw new Error(data.error?.message || 'Upload failed — check your Cloudinary preset');
+      }
+    } catch(err){
+      // Fall back to base64 so poll still works even without Cloudinary
+      showImgStatus('⚠ Cloudinary unavailable — using local image instead','warn');
+      const r2 = new FileReader();
+      r2.onload = ev => { pendingImageUrl = ev.target.result; };
+      r2.readAsDataURL(file);
+    }
   } else {
-    // No Cloudinary configured — store as base64 (fine for demos)
-    const reader2 = new FileReader();
-    reader2.onload = ev => { pendingImageUrl = ev.target.result; showImgStatus('Image ready (base64)','success'); };
-    reader2.readAsDataURL(file);
+    const r2 = new FileReader();
+    r2.onload = ev => { pendingImageUrl = ev.target.result; showImgStatus('✓ Image ready','success'); };
+    r2.readAsDataURL(file);
   }
 }
 
 function showImgStatus(msg, type){
   const el = document.getElementById('img-status');
-  if(type==='uploading') el.innerHTML=`<div class="img-uploading"><div class="spinner" style="border-top-color:var(--accent)"></div>${msg}</div>`;
-  else if(type==='success') el.innerHTML=`<div style="font-size:12px;color:var(--success);margin-top:5px;">✓ ${msg}</div>`;
-  else if(type==='error') el.innerHTML=`<div style="font-size:12px;color:var(--danger);margin-top:5px;">⚠ ${msg}</div>`;
-  else el.innerHTML='';
+  const color = type==='success'?'var(--accent)':type==='error'?'var(--danger)':'#d4843a';
+  if(type==='uploading') el.innerHTML=`<div class="img-uploading"><div class="spinner" style="width:14px;height:14px;border-top-color:var(--accent)"></div>${msg}</div>`;
+  else el.innerHTML=`<div style="font-size:12px;color:${color};margin-top:5px;">${msg}</div>`;
 }
 
 function clearImage(e){
@@ -551,7 +573,6 @@ async function renderList(){
   catch(e){ badge.textContent='—'; showError('poll-list-container','Could not load polls. ('+e.message+')'); return; }
   const voted = getVotedPolls();
   badge.textContent = data.polls.length+(data.polls.length===1?' poll':' polls');
-  // Update stats
   const totalVotes = data.polls.reduce((s,p)=>s+p.options.reduce((a,o)=>a+o.votes,0),0);
   document.getElementById('stat-polls').textContent = data.polls.length;
   document.getElementById('stat-votes').textContent = totalVotes > 999 ? (totalVotes/1000).toFixed(1)+'k' : totalVotes;
@@ -627,8 +648,22 @@ function renderVoteView(){
   }).join('');
 
   const footerHtml = hasVoted
-    ? `<div class="vote-footer"><div class="total-votes"><strong>${total}</strong> total vote${total!==1?'s':''}</div><span class="tag tag-active">✓ Vote recorded</span></div><div class="result-msg success">Your vote has been counted. Results are shown above.</div>`
-    : `<div class="vote-footer"><div class="total-votes"><strong>${total}</strong> vote${total!==1?'s':''} so far</div><button class="btn btn-gold" id="vote-submit-btn" onclick="castVote()" ${selectedOptionId?'':'disabled'} style="${selectedOptionId?'':'opacity:.4;cursor:default;'}">${selectedOptionId?'Submit vote':'Select an option'}</button></div>`;
+    ? `<div class="vote-footer">
+        <div class="total-votes"><strong>${total}</strong> total vote${total!==1?'s':''}</div>
+        <span class="tag tag-active">✓ Vote recorded</span>
+       </div>
+       <div class="result-msg success">Your vote has been counted. Results are shown above.</div>
+       <div style="display:flex;gap:10px;margin-top:1.25rem;flex-wrap:wrap">
+         <button class="btn btn-gold" onclick="showList()">← All polls</button>
+         ${isLoggedIn() ? `<button class="btn" onclick="showCreate()">
+           <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+           Create another poll
+         </button>` : ''}
+       </div>`
+    : `<div class="vote-footer">
+        <div class="total-votes"><strong>${total}</strong> vote${total!==1?'s':''} so far</div>
+        <button class="btn btn-gold" id="vote-submit-btn" onclick="castVote()" ${selectedOptionId?'':'disabled'} style="${selectedOptionId?'':'opacity:.4;cursor:default;'}">${selectedOptionId?'Submit vote':'Select an option'}</button>
+       </div>`;
 
   document.getElementById('vote-content').innerHTML=`
     ${imgHtml}
@@ -658,54 +693,196 @@ async function castVote(){
 }
 
 // ════════════════════════════════════
-//  CREATE FORM
+//  MULTI-QUESTION CREATE FORM
 // ════════════════════════════════════
-let optCount=2;
+let questionCount = 0;
+
+function addQuestion(){
+  questionCount++;
+  const qid = 'q' + questionCount;
+  const container = document.getElementById('questions-container');
+  const isFirst = container.children.length === 0;
+  const block = document.createElement('div');
+  block.className = 'question-block';
+  block.id = 'block-' + qid;
+  block.innerHTML = `
+    <div class="question-block-header">
+      <div class="question-block-label">Question ${container.children.length + 1}</div>
+      ${!isFirst ? `<button class="remove-question-btn" onclick="removeQuestion('${qid}')">Remove</button>` : ''}
+    </div>
+    <div class="form-group" style="margin-bottom:.85rem">
+      <input class="form-input question-text" id="qtext-${qid}" type="text"
+        placeholder="Type your question here…" maxlength="200"/>
+    </div>
+    <div class="option-inputs" id="opts-${qid}">
+      <div class="option-input-row"><input class="form-input q-opt-input" data-qid="${qid}" type="text" placeholder="Option 1"/></div>
+      <div class="option-input-row"><input class="form-input q-opt-input" data-qid="${qid}" type="text" placeholder="Option 2"/></div>
+    </div>
+    <button class="add-opt-btn" onclick="addQOption('${qid}')">
+      <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Add option
+    </button>`;
+  container.appendChild(block);
+  renumberQuestions();
+  block.querySelector('.question-text').focus();
+}
+
+function removeQuestion(qid){
+  document.getElementById('block-' + qid)?.remove();
+  renumberQuestions();
+}
+
+function renumberQuestions(){
+  const blocks = document.querySelectorAll('#questions-container .question-block');
+  blocks.forEach((block, i) => {
+    const label = block.querySelector('.question-block-label');
+    if(label) label.textContent = 'Question ' + (i + 1);
+    const qid = block.id.replace('block-','');
+    const header = block.querySelector('.question-block-header');
+    let removeBtn = block.querySelector('.remove-question-btn');
+    if(blocks.length > 1){
+      if(!removeBtn){
+        removeBtn = document.createElement('button');
+        removeBtn.className = 'remove-question-btn';
+        removeBtn.textContent = 'Remove';
+        removeBtn.onclick = () => removeQuestion(qid);
+        header.appendChild(removeBtn);
+      }
+    } else {
+      removeBtn?.remove();
+    }
+  });
+}
+
+function addQOption(qid){
+  const container = document.getElementById('opts-' + qid);
+  if(!container) return;
+  const count = container.querySelectorAll('.q-opt-input').length;
+  if(count >= 8) return;
+  const row = document.createElement('div');
+  row.className = 'option-input-row';
+  row.innerHTML = `<input class="form-input q-opt-input" data-qid="${qid}" type="text" placeholder="Option ${count+1}"/>
+    <button class="remove-opt-btn" onclick="removeQOption(this)">✕</button>`;
+  container.appendChild(row);
+  row.querySelector('input').focus();
+}
+
+function removeQOption(btn){
+  const row = btn.closest('.option-input-row');
+  const qid = row.querySelector('.q-opt-input').dataset.qid;
+  if(document.querySelectorAll(`#opts-${qid} .q-opt-input`).length <= 2) return;
+  row.remove();
+  document.querySelectorAll(`#opts-${qid} .q-opt-input`).forEach((inp,i)=>{ if(!inp.value) inp.placeholder=`Option ${i+1}`; });
+}
+
+function showMsg(msg,type){ document.getElementById('form-msg').innerHTML=`<div class="result-msg ${type}" style="margin-top:.85rem">${msg}</div>`; }
+
 function resetForm(){
-  document.getElementById('form-question').value='';
+  document.getElementById('form-title').value='';
   document.getElementById('form-desc').value='';
   document.getElementById('form-enddate').value='';
   document.getElementById('form-msg').innerHTML='';
-  optCount=2;
+  document.getElementById('questions-container').innerHTML='';
+  questionCount=0;
   pendingImageUrl='';
-  clearImage({stopPropagation:()=>{}});
-  document.getElementById('option-inputs').innerHTML=`
-    <div class="option-input-row"><input class="form-input opt-input" type="text" placeholder="Option 1"/></div>
-    <div class="option-input-row"><input class="form-input opt-input" type="text" placeholder="Option 2"/></div>`;
+  const preview=document.getElementById('img-preview');
+  const placeholder=document.getElementById('img-placeholder');
+  const clearBtn=document.getElementById('img-clear-btn');
+  const area=document.getElementById('img-upload-area');
+  const status=document.getElementById('img-status');
+  if(preview){preview.style.display='none';preview.src='';}
+  if(placeholder) placeholder.style.display='block';
+  if(clearBtn) clearBtn.style.display='none';
+  if(area) area.classList.remove('has-img');
+  if(status) status.innerHTML='';
+  document.getElementById('img-file-input').value='';
+  addQuestion(); // start with one question block
 }
-function addOptionInput(){
-  if(optCount>=8) return;
-  optCount++;
-  const row=document.createElement('div');
-  row.className='option-input-row';
-  row.innerHTML=`<input class="form-input opt-input" type="text" placeholder="Option ${optCount}"/><button class="remove-opt-btn" onclick="removeOpt(this)">✕</button>`;
-  document.getElementById('option-inputs').appendChild(row);
-  if(optCount>=8) document.getElementById('add-opt-btn').style.display='none';
-  row.querySelector('input').focus();
-}
-function removeOpt(btn){
-  btn.closest('.option-input-row').remove();
-  optCount--;
-  document.getElementById('add-opt-btn').style.display='';
-  document.querySelectorAll('.opt-input').forEach((inp,i)=>{ if(!inp.value) inp.placeholder=`Option ${i+1}`; });
-}
-function showMsg(msg,type){ document.getElementById('form-msg').innerHTML=`<div class="result-msg ${type}" style="margin-top:.85rem">${msg}</div>`; }
 
 async function submitPoll(){
-  const q=document.getElementById('form-question').value.trim();
-  const desc=document.getElementById('form-desc').value.trim();
-  const endDate=document.getElementById('form-enddate').value;
-  const opts=[...document.querySelectorAll('.opt-input')].map(i=>i.value.trim()).filter(Boolean);
-  if(!q){ showMsg('Please enter a question.','error'); return; }
-  if(opts.length<2){ showMsg('Add at least 2 options.','error'); return; }
+  const title   = document.getElementById('form-title').value.trim();
+  const desc    = document.getElementById('form-desc').value.trim();
+  const endDate = document.getElementById('form-enddate').value;
+
+  if(!title){ showMsg('Please enter a poll title.','error'); return; }
   if(!endDate){ showMsg('Please set an end date.','error'); return; }
-  if(new Date(endDate)<=new Date()){ showMsg('End date must be in the future.','error'); return; }
-  showMsg('Publishing poll…','warn');
+  if(new Date(endDate) <= new Date()){ showMsg('End date must be in the future.','error'); return; }
+
+  const questionBlocks = document.querySelectorAll('#questions-container .question-block');
+  if(!questionBlocks.length){ showMsg('Add at least one question.','error'); return; }
+
+  const questions = [];
+  for(const block of questionBlocks){
+    const qid   = block.id.replace('block-','');
+    const qtext = document.getElementById('qtext-'+qid)?.value.trim();
+    const opts  = [...block.querySelectorAll('.q-opt-input')].map(i=>i.value.trim()).filter(Boolean);
+    if(!qtext){ showMsg('Please fill in all question fields.','error'); document.getElementById('qtext-'+qid)?.focus(); return; }
+    if(opts.length < 2){ showMsg('Each question needs at least 2 options.','error'); return; }
+    questions.push({ question: qtext, options: opts });
+  }
+
+  showMsg(`Publishing ${questions.length} poll${questions.length>1?'s':''}…`,'warn');
+
   try{
-    const poll=await createPollInDB(q,desc,opts,endDate,pendingImageUrl);
-    showMsg('Poll created!','success');
-    setTimeout(()=>{ currentPollData=poll; currentPollId=poll.id; selectedOptionId=null; showView('vote'); renderVoteView(); },600);
+    const created = [];
+    for(let i=0; i<questions.length; i++){
+      const q = questions[i];
+      // Title becomes "Poll Title (1/3): Question text" for multi-question polls
+      const pollQuestion = questions.length > 1 ? `${title} (${i+1}/${questions.length}): ${q.question}` : q.question;
+      const poll = await createPollInDB(
+        pollQuestion,
+        i===0 ? desc : '',
+        q.options,
+        endDate,
+        i===0 ? pendingImageUrl : ''
+      );
+      created.push(poll);
+    }
+    showMsg(`Poll${created.length>1?'s':''}  created!`,'success');
+    setTimeout(()=>{
+      // Show success screen with options instead of jumping straight to vote
+      showCreationSuccess(created);
+    }, 600);
   } catch(e){ showMsg('Failed to create poll: '+e.message,'error'); }
+}
+
+function showCreationSuccess(created){
+  // Switch to vote view but render a success landing instead
+  showView('vote');
+  const multi = created.length > 1;
+  const pollLinks = multi
+    ? `<div style="display:flex;flex-direction:column;gap:8px;margin:1.25rem 0">
+        ${created.map((p,i)=>`
+          <button class="btn" style="justify-content:flex-start;text-align:left" onclick="openPoll('${p.id}')">
+            <span style="color:var(--accent);font-weight:700;flex-shrink:0">Q${i+1}</span>
+            ${escHtml(p.question.replace(/^.+?\): /,''))}
+          </button>`).join('')}
+      </div>`
+    : '';
+
+  document.getElementById('vote-content').innerHTML = `
+    <div style="text-align:center;padding:2.5rem 1rem 1rem">
+      <div style="font-size:3rem;margin-bottom:1rem">🎉</div>
+      <div style="font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;letter-spacing:-.03em;margin-bottom:.5rem">
+        Poll${multi?'s':''} published!
+      </div>
+      <p style="font-size:14px;color:var(--muted);margin-bottom:1.75rem;max-width:360px;margin-left:auto;margin-right:auto">
+        ${multi
+          ? `${created.length} questions are now live and ready to collect votes.`
+          : 'Your poll is now live and ready to collect votes.'}
+      </p>
+      ${pollLinks}
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:1.25rem">
+        <button class="btn btn-gold btn-lg" onclick="openPoll('${created[0].id}')">
+          View poll →
+        </button>
+        <button class="btn btn-lg" onclick="showCreate()">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          Create another poll
+        </button>
+        <button class="btn btn-lg" onclick="showList()">Back to all polls</button>
+      </div>
+    </div>`;
 }
 
 // ════════════════════════════════════
