@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PollSpace — Admin Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:#0d0e12; --surface:#15161c; --surface2:#1c1d26;
+      --border:rgba(255,255,255,0.07); --border2:rgba(255,255,255,0.13);
+      --text:#f0f0f2; --muted:#7a7b8a; --accent:#c8f04e; --accent2:#9de84a;
+      --danger:#ff5c5c; --success:#4effa0; --radius:14px; --radius-sm:8px;
+    }
+    html, body { min-height:100vh; background:var(--bg); color:var(--text); font-family:'DM Sans',sans-serif; font-size:15px; display:flex; align-items:center; justify-content:center; padding:1rem; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes spin { to{transform:rotate(360deg)} }
+
+    .card {
+      background:var(--surface); border:1px solid var(--border2);
+      border-radius:var(--radius); padding:2.5rem 2rem;
+      width:100%; max-width:420px;
+      animation:fadeIn .25s ease;
+    }
+
+    .logo { font-family:'Syne',sans-serif; font-size:1.1rem; font-weight:700; letter-spacing:-.02em; display:flex; align-items:center; gap:8px; margin-bottom:2rem; }
+    .logo-dot { width:8px; height:8px; border-radius:50%; background:var(--accent); box-shadow:0 0 10px var(--accent); }
+
+    .card-title { font-family:'Syne',sans-serif; font-size:1.5rem; font-weight:700; letter-spacing:-.02em; margin-bottom:.4rem; }
+    .card-sub { font-size:13px; color:var(--muted); margin-bottom:2rem; }
+
+    .form-group { margin-bottom:1.1rem; }
+    .form-label { display:block; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-bottom:7px; }
+    .form-input {
+      width:100%; padding:.75rem 1rem;
+      background:var(--surface2); border:1px solid var(--border);
+      border-radius:var(--radius-sm); color:var(--text);
+      font-family:inherit; font-size:14px; outline:none;
+      transition:border-color .15s;
+    }
+    .form-input:focus { border-color:var(--accent); }
+    .form-input::placeholder { color:var(--muted); }
+
+    .btn-submit {
+      width:100%; margin-top:1.5rem; padding:.8rem;
+      background:var(--accent); color:#0d0e12;
+      border:none; border-radius:var(--radius-sm);
+      font-family:inherit; font-size:14px; font-weight:700;
+      cursor:pointer; transition:background .15s;
+      display:flex; align-items:center; justify-content:center; gap:8px;
+    }
+    .btn-submit:hover { background:var(--accent2); }
+    .btn-submit:disabled { opacity:.5; cursor:default; }
+
+    .toggle-row { margin-top:1.5rem; text-align:center; font-size:13px; color:var(--muted); }
+    .toggle-link { color:var(--accent); cursor:pointer; text-decoration:none; background:none; border:none; font-family:inherit; font-size:13px; }
+    .toggle-link:hover { text-decoration:underline; }
+
+    .msg { font-size:13px; padding:10px 14px; border-radius:var(--radius-sm); margin-top:1rem; display:none; }
+    .msg.error   { background:rgba(255,92,92,.08);  color:var(--danger);  border:1px solid rgba(255,92,92,.2); display:block; }
+    .msg.success { background:rgba(78,255,160,.08); color:var(--success); border:1px solid rgba(78,255,160,.2); display:block; }
+
+    .spinner { width:16px; height:16px; border:2px solid rgba(0,0,0,.2); border-top-color:#0d0e12; border-radius:50%; animation:spin .6s linear infinite; }
+
+    .back-link { position:fixed; top:1.5rem; left:1.5rem; font-size:13px; color:var(--muted); text-decoration:none; display:flex; align-items:center; gap:5px; transition:color .15s; }
+    .back-link:hover { color:var(--text); }
+
+    .divider { height:1px; background:var(--border); margin:1.5rem 0; }
+    .strength-bar { height:3px; border-radius:999px; margin-top:5px; transition:all .2s; background:var(--border2); }
+    .strength-bar.weak   { background:var(--danger); width:33%; }
+    .strength-bar.medium { background:#ff9f4e; width:66%; }
+    .strength-bar.strong { background:var(--success); width:100%; }
+  </style>
+</head>
+<body>
+
+<a href="/" class="back-link">← Back to polls</a>
+
+<div class="card" id="card">
+  <div class="logo"><div class="logo-dot"></div> PollSpace</div>
+
+  <!-- LOGIN FORM -->
+  <div id="form-login">
+    <div class="card-title">Welcome back</div>
+    <div class="card-sub">Sign in to your admin account</div>
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input id="login-email" class="form-input" type="email" placeholder="you@example.com" autocomplete="email" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <input id="login-password" class="form-input" type="password" placeholder="Your password" autocomplete="current-password" />
+    </div>
+    <div class="msg" id="login-msg"></div>
+    <button class="btn-submit" id="login-btn" onclick="doLogin()">Sign in</button>
+    <div class="toggle-row">
+      Don't have an account?
+      <button class="toggle-link" onclick="showRegister()">Create one</button>
+    </div>
+  </div>
+
+  <!-- REGISTER FORM -->
+  <div id="form-register" style="display:none;">
+    <div class="card-title">Create account</div>
+    <div class="card-sub">Set up your admin account to create and manage polls</div>
+    <div class="form-group">
+      <label class="form-label">Full Name</label>
+      <input id="reg-name" class="form-input" type="text" placeholder="Jane Smith" autocomplete="name" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input id="reg-email" class="form-input" type="email" placeholder="you@example.com" autocomplete="email" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <input id="reg-password" class="form-input" type="password" placeholder="At least 8 characters" autocomplete="new-password" oninput="checkStrength(this.value)" />
+      <div class="strength-bar" id="strength-bar"></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Confirm Password</label>
+      <input id="reg-confirm" class="form-input" type="password" placeholder="Repeat password" autocomplete="new-password" />
+    </div>
+    <div class="msg" id="reg-msg"></div>
+    <button class="btn-submit" id="reg-btn" onclick="doRegister()">Create account</button>
+    <div class="toggle-row">
+      Already have an account?
+      <button class="toggle-link" onclick="showLogin()">Sign in</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Redirect if already logged in
+const existing = localStorage.getItem('ps_token');
+if (existing) {
+  const redir = new URLSearchParams(location.search).get('redirect') || '/dashboard.html';
+  location.href = redir;
+}
+
+function showLogin() {
+  document.getElementById('form-login').style.display = '';
+  document.getElementById('form-register').style.display = 'none';
+}
+function showRegister() {
+  document.getElementById('form-login').style.display = 'none';
+  document.getElementById('form-register').style.display = '';
+}
+
+function setMsg(id, text, type) {
+  const el = document.getElementById(id);
+  el.textContent = text;
+  el.className = 'msg ' + type;
+}
+
+function checkStrength(val) {
+  const bar = document.getElementById('strength-bar');
+  if (!val) { bar.className = 'strength-bar'; return; }
+  if (val.length < 8) { bar.className = 'strength-bar weak'; return; }
+  const hasUpper = /[A-Z]/.test(val);
+  const hasNum   = /[0-9]/.test(val);
+  const hasSpec  = /[^a-zA-Z0-9]/.test(val);
+  const score    = [hasUpper, hasNum, hasSpec].filter(Boolean).length;
+  bar.className  = 'strength-bar ' + (score >= 2 ? 'strong' : 'medium');
+}
+
+async function doLogin() {
+  const email    = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const btn      = document.getElementById('login-btn');
+
+  if (!email || !password) { setMsg('login-msg', 'Please fill in all fields.', 'error'); return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Signing in…';
+
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) { setMsg('login-msg', data.error || 'Login failed.', 'error'); return; }
+
+    localStorage.setItem('ps_token', data.token);
+    localStorage.setItem('ps_admin', JSON.stringify(data.admin));
+    setMsg('login-msg', 'Signed in! Redirecting…', 'success');
+    const redir = new URLSearchParams(location.search).get('redirect') || '/dashboard.html';
+    setTimeout(() => location.href = redir, 600);
+  } catch (e) {
+    setMsg('login-msg', 'Network error. Try again.', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Sign in';
+  }
+}
+
+async function doRegister() {
+  const name     = document.getElementById('reg-name').value.trim();
+  const email    = document.getElementById('reg-email').value.trim();
+  const password = document.getElementById('reg-password').value;
+  const confirm  = document.getElementById('reg-confirm').value;
+  const btn      = document.getElementById('reg-btn');
+
+  if (!name || !email || !password) { setMsg('reg-msg', 'Please fill in all fields.', 'error'); return; }
+  if (password.length < 8)          { setMsg('reg-msg', 'Password must be at least 8 characters.', 'error'); return; }
+  if (password !== confirm)         { setMsg('reg-msg', 'Passwords do not match.', 'error'); return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Creating account…';
+
+  try {
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) { setMsg('reg-msg', data.error || 'Registration failed.', 'error'); return; }
+
+    localStorage.setItem('ps_token', data.token);
+    localStorage.setItem('ps_admin', JSON.stringify(data.admin));
+    setMsg('reg-msg', 'Account created! Redirecting…', 'success');
+    setTimeout(() => location.href = '/dashboard.html', 600);
+  } catch (e) {
+    setMsg('reg-msg', 'Network error. Try again.', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Create account';
+  }
+}
+
+// Allow Enter key to submit
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  if (document.getElementById('form-register').style.display === 'none') doLogin();
+  else doRegister();
+});
+</script>
+</body>
+</html>

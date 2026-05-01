@@ -160,14 +160,16 @@
     PollSpace
   </div>
   <div class="header-right">
+    <span id="admin-name-badge" style="font-size:12px;color:var(--muted);"></span>
     <a href="/" class="btn">← Back to polls</a>
+    <button class="btn" onclick="localStorage.removeItem('ps_token');localStorage.removeItem('ps_admin');location.href='/login.html'">Sign out</button>
   </div>
 </header>
 
 <main>
   <div class="page-header">
     <div class="page-title">Stakeholder <span>Dashboard</span></div>
-    <div class="page-sub">Analysis and recommendations for concluded polls</div>
+    <div class="page-sub">Analysis and recommendations for your concluded polls</div>
   </div>
 
   <div class="stats-row" id="stats-row">
@@ -189,10 +191,20 @@
 const API = '/api';
 const CHART_COLORS = ['#c8f04e','#4effa0','#4eb8ff','#ff9f4e','#c44eff','#ff4e7a','#4effea','#ffe44e'];
 
+// ── Auth guard ────────────────────────────────────────────────
+const psToken = localStorage.getItem('ps_token');
+const psAdmin = (() => { try { return JSON.parse(localStorage.getItem('ps_admin')); } catch { return null; } })();
+if (!psToken) { location.href = '/login.html?redirect=/dashboard.html'; }
+
+function authHeaders() {
+  return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + psToken };
+}
+
 // ── Fetch concluded polls ─────────────────────────────────────
 async function loadDashboard() {
   try {
-    const res = await fetch(API + '/polls/concluded');
+    const res = await fetch(API + '/polls/concluded', { headers: authHeaders() });
+    if (res.status === 401) { location.href = '/login.html?redirect=/dashboard.html'; return; }
     if (!res.ok) throw new Error('Request failed: ' + res.status);
     const polls = await res.json();
     renderStats(polls);
@@ -400,7 +412,7 @@ async function loadInsights(pollId, force = false) {
 
   try {
     const url = API + '/polls/' + pollId + '/insights' + (force ? '?regenerate=1' : '');
-    const res = await fetch(url);
+    const res = await fetch(url, { headers: authHeaders() });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error || 'Failed: ' + res.status);
@@ -450,6 +462,10 @@ function escHtml(str) {
 }
 
 // ── Init ──────────────────────────────────────────────────────
+if (psAdmin) {
+  const badge = document.getElementById('admin-name-badge');
+  if (badge) badge.textContent = psAdmin.name;
+}
 loadDashboard();
 </script>
 </body>

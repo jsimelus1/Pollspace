@@ -563,9 +563,11 @@
       PollSpace
     </div>
     <div class="header-actions">
-      <a href="/dashboard.html" class="btn btn-ghost btn-sm">Dashboard</a>
-      <button class="btn btn-ghost btn-sm" onclick="showAdmin()">Admin</button>
-      <button class="btn btn-accent btn-sm" onclick="showCreate()">
+      <a href="/dashboard.html" class="btn btn-ghost btn-sm" id="header-dashboard" style="display:none;">Dashboard</a>
+      <button class="btn btn-ghost btn-sm" onclick="showAdmin()" id="header-admin" style="display:none;">Admin</button>
+      <button class="btn btn-ghost btn-sm" id="header-logout" style="display:none;" onclick="doLogout()">Sign out</button>
+      <a href="/login.html" class="btn btn-ghost btn-sm" id="header-login">Sign in</a>
+      <button class="btn btn-accent btn-sm" onclick="requireAuthAction('create')" id="header-newpoll">
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         New poll
       </button>
@@ -587,7 +589,7 @@
           PollSpace is a lightweight polling platform for teams and communities. Create timed polls, gather votes from anyone, and let AI turn the results into clear recommendations for your stakeholders.
         </p>
         <div style="display:flex;gap:10px;margin-top:1.25rem;flex-wrap:wrap;">
-          <button class="btn btn-accent" onclick="showCreate()">
+          <button class="btn btn-accent" onclick="requireAuthAction('create')">
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
             Create a poll
           </button>
@@ -619,7 +621,7 @@
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;">
           <div style="font-size:1.4rem;margin-bottom:.75rem;">✦</div>
           <div style="font-family:'Syne',sans-serif;font-size:.95rem;font-weight:600;margin-bottom:.4rem;">AI Insights</div>
-          <div style="font-size:13px;color:var(--muted);line-height:1.6;">Once a poll concludes, we analyze the results and generates a structured report — key findings, data insights, and actionable recommendations tailored for stakeholders.</div>
+          <div style="font-size:13px;color:var(--muted);line-height:1.6;">Once a poll concludes, Claude AI analyzes the results and generates a structured report — key findings, data insights, and actionable recommendations tailored for stakeholders.</div>
         </div>
 
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;">
@@ -749,25 +751,52 @@
 // On Render : 'https://your-service-name.onrender.com/api'
 const API_BASE = '/api'; // relative path - works from same origin, no CORS needed
 
-// ════════════════════════════════════════════════════════════
-//  DATA LAYER — Nile DB via REST API
-// ════════════════════════════════════════════════════════════
-
-// Vote tracking still uses localStorage (client-side only, no auth needed)
-function getVotedPolls() {
-  try { return JSON.parse(localStorage.getItem('pollspace_voted') || '{}'); }
-  catch { return {}; }
+// ── Auth helpers ─────────────────────────────────────────────
+function getToken() { return localStorage.getItem('ps_token'); }
+function getAdmin() {
+  try { return JSON.parse(localStorage.getItem('ps_admin')); } catch { return null; }
 }
-function setVoted(pollId, optionId) {
-  const v = getVotedPolls();
-  v[pollId] = optionId;
-  localStorage.setItem('pollspace_voted', JSON.stringify(v));
+function isLoggedIn() { return !!getToken(); }
+
+function doLogout() {
+  localStorage.removeItem('ps_token');
+  localStorage.removeItem('ps_admin');
+  updateAuthUI();
+  showList();
+}
+
+function requireAuthAction(action) {
+  if (!isLoggedIn()) {
+    location.href = '/login.html?redirect=' + encodeURIComponent(location.pathname);
+    return;
+  }
+  if (action === 'create') showCreate();
+  if (action === 'admin')  showAdmin();
+}
+
+function updateAuthUI() {
+  const admin = getAdmin();
+  const loggedIn = isLoggedIn();
+  document.getElementById('header-login').style.display     = loggedIn ? 'none' : '';
+  document.getElementById('header-logout').style.display    = loggedIn ? '' : 'none';
+  document.getElementById('header-dashboard').style.display = loggedIn ? '' : 'none';
+  document.getElementById('header-admin').style.display     = loggedIn ? '' : 'none';
+  if (loggedIn && admin) {
+    document.getElementById('header-logout').textContent = admin.name + ' · Sign out';
+  }
 }
 
 // ── API helpers ──────────────────────────────────────────────
 
+function authHeaders() {
+  const token = getToken();
+  return token
+    ? { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }
+    : { 'Content-Type': 'application/json' };
+}
+
 async function apiGet(path) {
-  const res = await fetch(API_BASE + path);
+  const res = await fetch(API_BASE + path, { headers: authHeaders() });
   if (!res.ok) throw new Error('Request failed: ' + res.status);
   return res.json();
 }
@@ -775,7 +804,7 @@ async function apiGet(path) {
 async function apiPost(path, body) {
   const res = await fetch(API_BASE + path, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(),
     body: JSON.stringify(body),
   });
   if (!res.ok) {
@@ -786,7 +815,7 @@ async function apiPost(path, body) {
 }
 
 async function apiDelete(path) {
-  const res = await fetch(API_BASE + path, { method: 'DELETE' });
+  const res = await fetch(API_BASE + path, { method: 'DELETE', headers: authHeaders() });
   if (!res.ok) throw new Error('Delete failed: ' + res.status);
   return res.json();
 }
@@ -868,11 +897,13 @@ function showList() {
 }
 
 function showCreate() {
+  if (!isLoggedIn()) { location.href = '/login.html?redirect=/'; return; }
   resetForm();
   showView('create');
 }
 
 function showAdmin() {
+  if (!isLoggedIn()) { location.href = '/login.html?redirect=/'; return; }
   renderAdmin();
   showView('admin');
 }
@@ -1200,6 +1231,7 @@ document.getElementById('delete-modal').addEventListener('click', function(e) {
 });
 
 // ── Initial render ──
+updateAuthUI();
 renderList();
 </script>
 </body>
