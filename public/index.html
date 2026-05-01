@@ -577,6 +577,66 @@
 
     <!-- LIST VIEW -->
     <div id="view-list" class="view active">
+
+      <!-- HERO SECTION -->
+      <div style="margin-bottom:3rem;">
+        <div style="font-family:'Syne',sans-serif;font-size:2rem;font-weight:700;letter-spacing:-.03em;line-height:1.15;margin-bottom:.75rem;">
+          Collect opinions.<br><span style="color:var(--accent);">Act on insights.</span>
+        </div>
+        <p style="font-size:14px;color:var(--muted);max-width:480px;line-height:1.7;">
+          PollSpace is a lightweight polling platform for teams and communities. Create timed polls, gather votes from anyone, and let AI turn the results into clear recommendations for your stakeholders.
+        </p>
+        <div style="display:flex;gap:10px;margin-top:1.25rem;flex-wrap:wrap;">
+          <button class="btn btn-accent" onclick="showCreate()">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            Create a poll
+          </button>
+          <a href="/dashboard.html" class="btn">View Dashboard →</a>
+        </div>
+      </div>
+
+      <!-- FEATURES GRID -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:3rem;">
+
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;">
+          <div style="font-size:1.4rem;margin-bottom:.75rem;">🗳️</div>
+          <div style="font-family:'Syne',sans-serif;font-size:.95rem;font-weight:600;margin-bottom:.4rem;">Create Polls</div>
+          <div style="font-size:13px;color:var(--muted);line-height:1.6;">Build a poll in seconds. Add a question, up to 8 answer options, an optional description, and a closing deadline. Published instantly — no account required to vote.</div>
+        </div>
+
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;">
+          <div style="font-size:1.4rem;margin-bottom:.75rem;">⏱️</div>
+          <div style="font-family:'Syne',sans-serif;font-size:.95rem;font-weight:600;margin-bottom:.4rem;">Timed Deadlines</div>
+          <div style="font-size:13px;color:var(--muted);line-height:1.6;">Every poll has an end date and time. Voting closes automatically when the deadline passes. Concluded polls are locked and moved to the analysis dashboard.</div>
+        </div>
+
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;">
+          <div style="font-size:1.4rem;margin-bottom:.75rem;">📊</div>
+          <div style="font-family:'Syne',sans-serif;font-size:.95rem;font-weight:600;margin-bottom:.4rem;">Live Results</div>
+          <div style="font-size:13px;color:var(--muted);line-height:1.6;">After voting, results update in real time with animated bars and percentage breakdowns. Everyone sees the same live data — public and internal voters alike.</div>
+        </div>
+
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;">
+          <div style="font-size:1.4rem;margin-bottom:.75rem;">✦</div>
+          <div style="font-family:'Syne',sans-serif;font-size:.95rem;font-weight:600;margin-bottom:.4rem;">AI Insights</div>
+          <div style="font-size:13px;color:var(--muted);line-height:1.6;">Once a poll concludes, Claude AI analyzes the results and generates a structured report — key findings, data insights, and actionable recommendations tailored for stakeholders.</div>
+        </div>
+
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;">
+          <div style="font-size:1.4rem;margin-bottom:.75rem;">📈</div>
+          <div style="font-family:'Syne',sans-serif;font-size:.95rem;font-weight:600;margin-bottom:.4rem;">Stakeholder Dashboard</div>
+          <div style="font-size:13px;color:var(--muted);line-height:1.6;">A dedicated dashboard aggregates all concluded polls in one place. Bar charts, doughnut breakdowns, vote tables, and AI analysis — everything stakeholders need to make informed decisions.</div>
+        </div>
+
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;">
+          <div style="font-size:1.4rem;margin-bottom:.75rem;">🔒</div>
+          <div style="font-family:'Syne',sans-serif;font-size:.95rem;font-weight:600;margin-bottom:.4rem;">Duplicate Prevention</div>
+          <div style="font-size:13px;color:var(--muted);line-height:1.6;">Each voter can only submit one response per poll. Votes are tracked by IP address to keep results clean and representative, whether respondents are internal staff or the general public.</div>
+        </div>
+
+      </div>
+
+      <!-- ACTIVE POLLS HEADER -->
       <div class="section-header">
         <div>
           <div class="section-title">Active <span>polls</span></div>
