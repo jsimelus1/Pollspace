@@ -560,13 +560,14 @@
   <header>
     <div class="logo">
       <div class="logo-dot"></div>
-      True Polls
+      PollSpace
     </div>
     <div class="header-actions">
+      <a href="/dashboard.html" class="btn btn-ghost btn-sm">Dashboard</a>
       <button class="btn btn-ghost btn-sm" onclick="showAdmin()">Admin</button>
       <button class="btn btn-accent btn-sm" onclick="showCreate()">
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-        Create a Poll
+        New poll
       </button>
     </div>
   </header>
@@ -614,6 +615,12 @@
       <div class="form-group">
         <label class="form-label">Description <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted);font-size:11px;">(optional)</span></label>
         <textarea id="form-desc" class="form-input" placeholder="Add more context…" rows="2"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">End Date & Time <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--danger);font-size:11px;">(required)</span></label>
+        <input id="form-enddate" class="form-input" type="datetime-local" />
+        <div style="font-size:11px;color:var(--muted);margin-top:5px;">Poll closes automatically at this date and time. Results will appear in the Dashboard.</div>
       </div>
 
       <div class="form-group">
@@ -729,11 +736,13 @@ async function apiDelete(path) {
 // The app uses { id, question, desc, options: [{id, text, votes}] }
 function normalizePoll(raw) {
   return {
-    id:        raw.id,
-    question:  raw.question,
-    desc:      raw.description || '',
-    createdAt: raw.created_at ? new Date(raw.created_at).getTime() : Date.now(),
-    options:   (raw.options || []).map(o => ({
+    id:           raw.id,
+    question:     raw.question,
+    desc:         raw.description || '',
+    end_date:     raw.end_date || null,
+    is_concluded: raw.is_concluded || false,
+    createdAt:    raw.created_at ? new Date(raw.created_at).getTime() : Date.now(),
+    options:      (raw.options || []).map(o => ({
       id:    o.id,
       text:  o.option_text,
       votes: Number(o.vote_count) || 0,
@@ -756,8 +765,8 @@ async function getPollById(pollId) {
 }
 
 // Create a new poll in Nile
-async function createPollInDB(question, desc, optionTexts) {
-  const raw = await apiPost('/polls', { question, description: desc, options: optionTexts });
+async function createPollInDB(question, desc, optionTexts, endDate) {
+  const raw = await apiPost('/polls', { question, description: desc, options: optionTexts, end_date: endDate });
   return normalizePoll(raw);
 }
 
@@ -855,6 +864,7 @@ async function renderList() {
               <div class="dot"></div>
               <span>${total} vote${total !== 1 ? 's' : ''}</span>
               <div class="dot"></div>
+              ${poll.end_date ? `<span>Ends ${new Date(poll.end_date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</span>` : ''}
               ${hasVoted
                 ? `<span style="color:var(--accent);">✓ Voted</span>`
                 : `<span>Vote now</span>`}
@@ -980,6 +990,7 @@ let optCount = 2;
 function resetForm() {
   document.getElementById('form-question').value = '';
   document.getElementById('form-desc').value = '';
+  document.getElementById('form-enddate').value = '';
   document.getElementById('form-msg').innerHTML = '';
   optCount = 2;
   document.getElementById('option-inputs').innerHTML = `
@@ -1022,15 +1033,18 @@ function showMsg(msg, type) {
 async function submitPoll() {
   const q = document.getElementById('form-question').value.trim();
   const desc = document.getElementById('form-desc').value.trim();
+  const endDate = document.getElementById('form-enddate').value;
   const opts = [...document.querySelectorAll('.opt-input')]
     .map(i => i.value.trim()).filter(Boolean);
 
   if (!q) { showMsg('Please enter a question.', 'error'); return; }
   if (opts.length < 2) { showMsg('Add at least 2 options.', 'error'); return; }
+  if (!endDate) { showMsg('Please set an end date for the poll.', 'error'); return; }
+  if (new Date(endDate) <= new Date()) { showMsg('End date must be in the future.', 'error'); return; }
 
   showMsg('Publishing poll…', 'warn');
   try {
-    const poll = await createPollInDB(q, desc, opts);
+    const poll = await createPollInDB(q, desc, opts, endDate);
     showMsg('Poll created!', 'success');
     setTimeout(() => {
       currentPollData = poll;
