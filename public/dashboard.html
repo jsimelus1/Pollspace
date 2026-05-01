@@ -1,471 +1,313 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>PollSpace — Dashboard</title>
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --bg:       #0d0e12;
-      --surface:  #15161c;
-      --surface2: #1c1d26;
-      --border:   rgba(255,255,255,0.07);
-      --border2:  rgba(255,255,255,0.13);
-      --text:     #f0f0f2;
-      --muted:    #7a7b8a;
-      --accent:   #c8f04e;
-      --accent2:  #9de84a;
-      --danger:   #ff5c5c;
-      --success:  #4effa0;
-      --radius:   14px;
-      --radius-sm:8px;
-      --chart-1: #c8f04e;
-      --chart-2: #4effa0;
-      --chart-3: #4eb8ff;
-      --chart-4: #ff9f4e;
-      --chart-5: #c44eff;
-      --chart-6: #ff4e7a;
-      --chart-7: #4effea;
-      --chart-8: #ffe44e;
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#0a0a0a;--bg2:#111111;--surface:#181818;--surface2:#222222;--surface3:#2a2a2a;
+      --border:rgba(212,175,55,0.12);--border2:rgba(212,175,55,0.28);--border3:rgba(212,175,55,0.5);
+      --text:#f5f0e8;--muted:#8a8070;--muted2:#6a6055;
+      --accent:#d4af37;--accent2:#f0cd60;--accent3:#b8960c;
+      --danger:#e05555;--success:#d4af37;
+      --radius:12px;--radius-sm:7px;
+      --gold-glow:0 0 24px rgba(212,175,55,0.15);
+      --c1:#d4af37;--c2:#f0cd60;--c3:#4eb8ff;--c4:#d4843a;--c5:#c44eff;--c6:#e05555;--c7:#b8960c;--c8:#f5e49c;
     }
-    html, body { min-height: 100vh; background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 15px; }
-    @keyframes fadeIn  { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
-    @keyframes spin    { to { transform: rotate(360deg); } }
-    @keyframes shimmer { 0%,100% { opacity:.4 } 50% { opacity:.9 } }
+    html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.7)}}
+    @keyframes shimmer{0%,100%{opacity:.3}50%{opacity:.7}}
 
-    /* ── HEADER ── */
-    header {
-      padding: 1.25rem 2rem;
-      border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: space-between;
-      position: sticky; top: 0;
-      background: rgba(13,14,18,0.9);
-      backdrop-filter: blur(12px);
-      z-index: 10;
-    }
-    .logo { font-family:'Syne',sans-serif; font-size:1.1rem; font-weight:700; letter-spacing:-.02em; display:flex; align-items:center; gap:10px; }
-    .logo-dot { width:8px; height:8px; border-radius:50%; background:var(--accent); box-shadow:0 0 12px var(--accent); }
-    .header-right { display:flex; gap:10px; align-items:center; }
-    .btn { display:inline-flex; align-items:center; gap:6px; padding:.55rem 1.1rem; border-radius:var(--radius-sm); font-family:'DM Sans',sans-serif; font-size:13px; font-weight:500; cursor:pointer; border:1px solid var(--border2); background:var(--surface2); color:var(--text); text-decoration:none; transition:all .18s; }
-    .btn:hover { background:var(--surface); border-color:rgba(255,255,255,.2); }
-    .btn-accent { background:var(--accent); color:#0d0e12; border-color:var(--accent); font-weight:600; }
-    .btn-accent:hover { background:var(--accent2); border-color:var(--accent2); }
+    /* NAV */
+    nav{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:1rem 2rem;background:rgba(10,10,10,0.92);border-bottom:1px solid var(--border);backdrop-filter:blur(16px)}
+    .nav-logo{font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:800;letter-spacing:-.03em;display:flex;align-items:center;gap:9px;text-decoration:none;color:var(--text)}
+    .nav-logo-dot{width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 14px var(--accent);animation:pulse 2.5s ease-in-out infinite}
+    .nav-right{display:flex;align-items:center;gap:8px}
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:.5rem 1rem;border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;border:1px solid var(--border2);background:var(--surface2);color:var(--text);transition:all .18s;text-decoration:none}
+    .btn:hover{background:var(--surface3);border-color:var(--border3)}
+    .btn-gold{background:var(--accent);color:#0a0a0a;border-color:var(--accent);font-weight:700}
+    .btn-gold:hover{background:var(--accent2);border-color:var(--accent2)}
+    .btn-sm{padding:.35rem .8rem;font-size:12px}
+    .btn-danger{border-color:rgba(224,85,85,.3);color:var(--danger)}
 
-    /* ── LAYOUT ── */
-    main { max-width: 1100px; margin: 0 auto; padding: 2.5rem 1.5rem; }
+    /* LAYOUT */
+    main{max-width:1100px;margin:0 auto;padding:2.5rem 1.5rem}
 
-    /* ── PAGE HEADER ── */
-    .page-header { margin-bottom: 2.5rem; }
-    .page-title { font-family:'Syne',sans-serif; font-size:2rem; font-weight:700; letter-spacing:-.03em; line-height:1.1; }
-    .page-title span { color:var(--accent); }
-    .page-sub { font-size:14px; color:var(--muted); margin-top:.5rem; }
+    /* PAGE HEADER */
+    .page-header{margin-bottom:2.5rem}
+    .page-title{font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;letter-spacing:-.04em;line-height:1.1}
+    .page-title span{color:var(--accent)}
+    .page-sub{font-size:14px;color:var(--muted);margin-top:.5rem}
+    .admin-greeting{font-size:13px;color:var(--accent);margin-bottom:.35rem;font-weight:500}
 
-    /* ── STATS ROW ── */
-    .stats-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin-bottom:2.5rem; }
-    .stat-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1.25rem 1.5rem; }
-    .stat-label { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-bottom:.4rem; }
-    .stat-value { font-family:'Syne',sans-serif; font-size:2rem; font-weight:700; color:var(--accent); line-height:1; }
-    .stat-desc { font-size:12px; color:var(--muted); margin-top:.3rem; }
+    /* STATS */
+    .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:10px;margin-bottom:2.5rem}
+    .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem 1.25rem}
+    .stat-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:.4rem}
+    .stat-value{font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;color:var(--accent);line-height:1}
+    .stat-desc{font-size:11px;color:var(--muted2);margin-top:.25rem}
+    .skeleton{background:var(--surface2);border-radius:5px;animation:shimmer 1.5s ease infinite}
 
-    /* ── POLL CARDS ── */
-    .polls-grid { display:flex; flex-direction:column; gap:1.5rem; }
+    /* POLL REPORT */
+    .polls-grid{display:flex;flex-direction:column;gap:1.5rem}
+    .poll-report{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;animation:fadeIn .3s ease}
+    .poll-report-header{padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:1rem}
+    .poll-report-img{width:64px;height:64px;border-radius:var(--radius-sm);object-fit:cover;flex-shrink:0;border:1px solid var(--border)}
+    .poll-report-img-placeholder{width:64px;height:64px;border-radius:var(--radius-sm);background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:1.75rem;flex-shrink:0;border:1px solid var(--border)}
+    .poll-report-info{flex:1;min-width:0}
+    .poll-report-question{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:700;line-height:1.3;margin-bottom:.4rem}
+    .poll-report-meta{font-size:12px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap}
+    .concluded-tag{font-size:10px;font-weight:700;padding:3px 9px;border-radius:999px;background:rgba(212,175,55,.1);color:var(--accent);border:1px solid rgba(212,175,55,.25);white-space:nowrap;align-self:flex-start;flex-shrink:0}
 
-    .poll-report {
-      background:var(--surface);
-      border:1px solid var(--border);
-      border-radius:var(--radius);
-      overflow:hidden;
-      animation: fadeIn .3s ease;
-    }
+    /* TABS */
+    .report-tabs{display:flex;border-bottom:1px solid var(--border);padding:0 1.5rem;gap:2px}
+    .report-tab{padding:.7rem .9rem;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border:none;background:none;font-family:inherit;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s}
+    .report-tab.active{color:var(--text);border-bottom-color:var(--accent)}
+    .report-body{padding:1.5rem}
 
-    .poll-report-header {
-      padding:1.5rem;
-      border-bottom:1px solid var(--border);
-      display:flex; align-items:flex-start; justify-content:space-between; gap:1rem;
-    }
-    .poll-report-question { font-family:'Syne',sans-serif; font-size:1.1rem; font-weight:700; line-height:1.3; }
-    .poll-report-meta { font-size:12px; color:var(--muted); margin-top:.4rem; display:flex; gap:12px; flex-wrap:wrap; }
-    .concluded-tag { font-size:11px; font-weight:600; padding:3px 10px; border-radius:999px; background:rgba(200,240,78,.1); color:var(--accent); border:1px solid rgba(200,240,78,.25); white-space:nowrap; }
+    /* CHARTS */
+    .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}
+    @media(max-width:640px){.charts-grid{grid-template-columns:1fr}}
+    .chart-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1.1rem}
+    .chart-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:.85rem}
+    .chart-wrap{position:relative;height:210px}
 
-    /* ── TABS ── */
-    .report-tabs { display:flex; border-bottom:1px solid var(--border); padding:0 1.5rem; gap:2px; }
-    .report-tab { padding:.75rem 1rem; font-size:13px; font-weight:500; color:var(--muted); cursor:pointer; border:none; background:none; font-family:inherit; border-bottom:2px solid transparent; margin-bottom:-1px; transition:all .15s; }
-    .report-tab.active { color:var(--text); border-bottom-color:var(--accent); }
+    /* RESULTS TABLE */
+    .results-table{width:100%;border-collapse:collapse;margin-top:1.25rem}
+    .results-table th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);text-align:left;padding:.5rem .7rem;border-bottom:1px solid var(--border)}
+    .results-table td{padding:.6rem .7rem;font-size:13px;border-bottom:1px solid var(--border)}
+    .results-table tr:last-child td{border-bottom:none}
+    .winner-cell{color:var(--accent);font-weight:700}
+    .mini-bar-wrap{height:5px;background:var(--surface3);border-radius:999px;overflow:hidden}
+    .mini-bar{height:100%;border-radius:999px;background:var(--accent)}
 
-    .report-body { padding:1.5rem; }
+    /* AI INSIGHTS */
+    .insights-area{min-height:100px}
+    .insights-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.85rem;padding:2.5rem;color:var(--muted);font-size:13px}
+    .spinner{width:22px;height:22px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+    .ai-badge{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;background:rgba(212,175,55,.1);color:var(--accent);border:1px solid rgba(212,175,55,.25);margin-bottom:1.1rem}
+    .insights-content{font-size:14px;line-height:1.8;color:var(--text)}
+    .insights-content h2,.insights-content h3{font-family:'Syne',sans-serif;font-size:.82rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.07em;margin:1.1rem 0 .45rem}
+    .insights-content h2:first-child,.insights-content h3:first-child{margin-top:0}
+    .insights-content ul{padding-left:1.2rem}
+    .insights-content li{margin-bottom:.3rem}
+    .insights-content strong{color:var(--text);font-weight:600}
+    .insights-content p{margin-bottom:.65rem}
+    .insights-meta{font-size:11px;color:var(--muted2);margin-top:1.1rem;padding-top:.7rem;border-top:1px solid var(--border)}
 
-    /* ── CHARTS ── */
-    .charts-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; }
-    @media(max-width:680px) { .charts-grid { grid-template-columns:1fr; } }
+    /* EMPTY / ERROR */
+    .empty-state{text-align:center;padding:5rem 1rem;color:var(--muted)}
+    .empty-icon{font-size:3rem;opacity:.35;margin-bottom:.85rem}
+    .empty-state h3{font-family:'Syne',sans-serif;font-size:1rem;color:var(--text);margin-bottom:.4rem}
+    .empty-state p{font-size:13px}
+    .error-msg{background:rgba(224,85,85,.07);color:var(--danger);border:1px solid rgba(224,85,85,.2);border-radius:var(--radius-sm);padding:10px 14px;font-size:13px;margin:1rem 0}
 
-    .chart-card { background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:1.25rem; }
-    .chart-title { font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-bottom:1rem; }
-    .chart-wrap { position:relative; height:220px; }
-
-    /* ── RESULTS TABLE ── */
-    .results-table { width:100%; border-collapse:collapse; margin-top:1rem; }
-    .results-table th { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); text-align:left; padding:.5rem .75rem; border-bottom:1px solid var(--border); }
-    .results-table td { padding:.65rem .75rem; font-size:13px; border-bottom:1px solid var(--border); }
-    .results-table tr:last-child td { border-bottom:none; }
-    .results-table .winner { color:var(--accent); font-weight:600; }
-    .bar-cell { width:40%; }
-    .mini-bar-wrap { height:6px; background:var(--surface); border-radius:999px; overflow:hidden; }
-    .mini-bar { height:100%; border-radius:999px; background:var(--accent); transition:width .5s ease; }
-
-    /* ── AI INSIGHTS ── */
-    .insights-area { min-height:120px; }
-    .insights-loading {
-      display:flex; flex-direction:column; align-items:center; justify-content:center;
-      gap:1rem; padding:2.5rem; color:var(--muted); font-size:13px;
-    }
-    .spinner { width:24px; height:24px; border:2px solid var(--border2); border-top-color:var(--accent); border-radius:50%; animation:spin .7s linear infinite; }
-    .ai-badge {
-      display:inline-flex; align-items:center; gap:6px;
-      font-size:11px; font-weight:600; padding:3px 10px;
-      border-radius:999px; background:rgba(78,184,255,.08);
-      color:#4eb8ff; border:1px solid rgba(78,184,255,.2);
-      margin-bottom:1.25rem;
-    }
-    .insights-content { font-size:14px; line-height:1.75; color:var(--text); }
-    .insights-content h2,
-    .insights-content h3 { font-family:'Syne',sans-serif; font-size:.85rem; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:.06em; margin:1.25rem 0 .5rem; }
-    .insights-content h2:first-child,
-    .insights-content h3:first-child { margin-top:0; }
-    .insights-content ul { padding-left:1.25rem; }
-    .insights-content li { margin-bottom:.35rem; }
-    .insights-content strong { color:var(--text); font-weight:600; }
-    .insights-content p { margin-bottom:.75rem; }
-    .insights-meta { font-size:11px; color:var(--muted); margin-top:1.25rem; padding-top:.75rem; border-top:1px solid var(--border); }
-    .regen-btn { margin-top:.75rem; font-size:12px; }
-
-    /* ── EMPTY / ERROR ── */
-    .empty-state { text-align:center; padding:5rem 1rem; color:var(--muted); }
-    .empty-icon { font-size:3rem; opacity:.4; margin-bottom:1rem; }
-    .empty-state h3 { font-family:'Syne',sans-serif; font-size:1.1rem; color:var(--text); margin-bottom:.4rem; }
-    .empty-state p { font-size:13px; }
-    .error-msg { background:rgba(255,92,92,.08); color:var(--danger); border:1px solid rgba(255,92,92,.2); border-radius:var(--radius-sm); padding:10px 14px; font-size:13px; margin:1rem 0; }
-
-    /* ── LOADING SKELETON ── */
-    .skeleton { background:var(--surface2); border-radius:6px; animation:shimmer 1.5s ease infinite; }
+    footer{padding:1.25rem 2rem;border-top:1px solid var(--border);text-align:center;font-size:12px;color:var(--muted2)}
+    @media(max-width:600px){nav{padding:.85rem 1rem}main{padding:1.5rem .85rem}.page-title{font-size:1.5rem}}
   </style>
 </head>
 <body>
 
-<header>
-  <div class="logo">
-    <div class="logo-dot"></div>
-    PollSpace
-  </div>
-  <div class="header-right">
+<nav>
+  <a href="/" class="nav-logo"><div class="nav-logo-dot"></div>PollSpace</a>
+  <div class="nav-right">
     <span id="admin-name-badge" style="font-size:12px;color:var(--muted);"></span>
-    <a href="/" class="btn">← Back to polls</a>
-    <button class="btn" onclick="localStorage.removeItem('ps_token');localStorage.removeItem('ps_admin');location.href='/login.html'">Sign out</button>
+    <a href="/" class="btn btn-sm">← Polls</a>
+    <button class="btn btn-sm" onclick="signOut()">Sign out</button>
   </div>
-</header>
+</nav>
 
 <main>
   <div class="page-header">
+    <div class="admin-greeting" id="admin-greeting"></div>
     <div class="page-title">Stakeholder <span>Dashboard</span></div>
-    <div class="page-sub">Analysis and recommendations for your concluded polls</div>
+    <div class="page-sub">Analysis and AI-powered recommendations for your concluded polls</div>
   </div>
 
   <div class="stats-row" id="stats-row">
-    <div class="stat-card"><div class="stat-label">Concluded Polls</div><div class="stat-value skeleton" style="width:40px;height:32px;"></div></div>
-    <div class="stat-card"><div class="stat-label">Total Votes Cast</div><div class="stat-value skeleton" style="width:60px;height:32px;"></div></div>
-    <div class="stat-card"><div class="stat-label">Avg Votes/Poll</div><div class="stat-value skeleton" style="width:50px;height:32px;"></div></div>
-    <div class="stat-card"><div class="stat-label">Most Recent Poll</div><div class="stat-value skeleton" style="width:80px;height:32px;font-size:1rem;"></div></div>
+    <div class="stat-card"><div class="stat-label">Concluded Polls</div><div class="skeleton" style="width:40px;height:30px;margin:.2rem 0"></div></div>
+    <div class="stat-card"><div class="stat-label">Total Votes</div><div class="skeleton" style="width:55px;height:30px;margin:.2rem 0"></div></div>
+    <div class="stat-card"><div class="stat-label">Avg Votes / Poll</div><div class="skeleton" style="width:45px;height:30px;margin:.2rem 0"></div></div>
+    <div class="stat-card"><div class="stat-label">Most Recent</div><div class="skeleton" style="width:70px;height:30px;margin:.2rem 0"></div></div>
   </div>
 
-  <div id="polls-container">
-    <div style="text-align:center;padding:3rem;color:var(--muted);font-size:13px;">
-      <div style="display:inline-block;width:22px;height:22px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin-bottom:.75rem;"></div>
-      <div>Loading concluded polls...</div>
+  <div class="polls-grid" id="polls-container">
+    <div style="text-align:center;padding:3rem;color:var(--muted);font-size:13px">
+      <div style="display:inline-block;width:22px;height:22px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin-bottom:.65rem"></div>
+      <div>Loading your dashboard…</div>
     </div>
   </div>
 </main>
 
+<footer>PollSpace Dashboard &mdash; Your data, your insights</footer>
+
 <script>
-const API = '/api';
-const CHART_COLORS = ['#c8f04e','#4effa0','#4eb8ff','#ff9f4e','#c44eff','#ff4e7a','#4effea','#ffe44e'];
+const API='/api';
+const CHART_COLORS=['#d4af37','#f0cd60','#4eb8ff','#d4843a','#c44eff','#e05555','#b8960c','#f5e49c'];
+const PLACEHOLDER_EMOJI=['🗳️','📊','💬','🤔','⚡','🌟','🎯','📝'];
 
-// ── Auth guard ────────────────────────────────────────────────
-const psToken = localStorage.getItem('ps_token');
-const psAdmin = (() => { try { return JSON.parse(localStorage.getItem('ps_admin')); } catch { return null; } })();
-if (!psToken) { location.href = '/login.html?redirect=/dashboard.html'; }
+// Auth guard
+const psToken=localStorage.getItem('ps_token');
+const psAdmin=(()=>{try{return JSON.parse(localStorage.getItem('ps_admin'));}catch{return null;}})();
+if(!psToken){location.href='/login.html?redirect=/dashboard.html';}
 
-function authHeaders() {
-  return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + psToken };
+function authHeaders(){return{'Content-Type':'application/json','Authorization':'Bearer '+psToken};}
+function signOut(){localStorage.removeItem('ps_token');localStorage.removeItem('ps_admin');location.href='/login.html';}
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// Init admin info
+if(psAdmin){
+  const badge=document.getElementById('admin-name-badge');
+  if(badge) badge.textContent=psAdmin.name;
+  const greeting=document.getElementById('admin-greeting');
+  if(greeting) greeting.textContent='Welcome back, '+psAdmin.name;
 }
 
-// ── Fetch concluded polls ─────────────────────────────────────
-async function loadDashboard() {
-  try {
-    const res = await fetch(API + '/polls/concluded', { headers: authHeaders() });
-    if (res.status === 401) { location.href = '/login.html?redirect=/dashboard.html'; return; }
-    if (!res.ok) throw new Error('Request failed: ' + res.status);
-    const polls = await res.json();
+// Load dashboard
+async function loadDashboard(){
+  try{
+    const res=await fetch(API+'/polls/concluded',{headers:authHeaders()});
+    if(res.status===401){location.href='/login.html?redirect=/dashboard.html';return;}
+    if(!res.ok) throw new Error('Request failed: '+res.status);
+    const polls=await res.json();
     renderStats(polls);
     renderPolls(polls);
-  } catch (e) {
-    document.getElementById('polls-container').innerHTML =
-      `<div class="error-msg">Failed to load dashboard: ${e.message}</div>`;
+  }catch(e){
+    document.getElementById('polls-container').innerHTML=`<div class="error-msg">Failed to load dashboard: ${e.message}</div>`;
   }
 }
 
-// ── Stats row ─────────────────────────────────────────────────
-function renderStats(polls) {
-  const totalVotes = polls.reduce((s, p) => s + p.total_votes, 0);
-  const avg = polls.length ? Math.round(totalVotes / polls.length) : 0;
-  const latest = polls.length ? new Date(polls[0].end_date).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '—';
-
-  document.getElementById('stats-row').innerHTML = `
-    <div class="stat-card">
-      <div class="stat-label">Concluded Polls</div>
-      <div class="stat-value">${polls.length}</div>
-      <div class="stat-desc">Available for analysis</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Total Votes Cast</div>
-      <div class="stat-value">${totalVotes.toLocaleString()}</div>
-      <div class="stat-desc">Across all polls</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Avg Votes / Poll</div>
-      <div class="stat-value">${avg}</div>
-      <div class="stat-desc">Participation rate</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Most Recent</div>
-      <div class="stat-value" style="font-size:1.4rem;">${latest}</div>
-      <div class="stat-desc">Last concluded poll</div>
-    </div>
-  `;
+function renderStats(polls){
+  const totalVotes=polls.reduce((s,p)=>s+(p.total_votes||0),0);
+  const avg=polls.length?Math.round(totalVotes/polls.length):0;
+  const latest=polls.length?new Date(polls[0].end_date).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'—';
+  document.getElementById('stats-row').innerHTML=`
+    <div class="stat-card"><div class="stat-label">Concluded Polls</div><div class="stat-value">${polls.length}</div><div class="stat-desc">Available for analysis</div></div>
+    <div class="stat-card"><div class="stat-label">Total Votes</div><div class="stat-value">${totalVotes.toLocaleString()}</div><div class="stat-desc">Across all polls</div></div>
+    <div class="stat-card"><div class="stat-label">Avg Votes / Poll</div><div class="stat-value">${avg}</div><div class="stat-desc">Participation rate</div></div>
+    <div class="stat-card"><div class="stat-label">Most Recent</div><div class="stat-value" style="font-size:1.35rem">${latest}</div><div class="stat-desc">Last concluded</div></div>`;
 }
 
-// ── Render all poll reports ───────────────────────────────────
-function renderPolls(polls) {
-  const container = document.getElementById('polls-container');
-
-  if (!polls.length) {
-    container.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">📊</div>
-        <h3>No concluded polls yet</h3>
-        <p>Polls will appear here once their end date has passed.</p>
-        <br>
-        <a href="/" class="btn btn-accent" style="display:inline-flex;">Create a poll</a>
-      </div>`;
+function renderPolls(polls){
+  const container=document.getElementById('polls-container');
+  if(!polls.length){
+    container.innerHTML=`<div class="empty-state"><div class="empty-icon">📊</div><h3>No concluded polls yet</h3><p>Polls appear here once their end date has passed.</p><br><a href="/" class="btn btn-gold" style="display:inline-flex;margin:0 auto">Create a poll</a></div>`;
     return;
   }
-
-  container.innerHTML = polls.map((poll, idx) => `
-    <div class="poll-report" id="report-${poll.id}">
+  container.innerHTML=polls.map(poll=>{
+    const total=poll.total_votes||0;
+    const imgHtml=poll.image_url
+      ?`<img class="poll-report-img" src="${escHtml(poll.image_url)}" alt="" loading="lazy"/>`
+      :`<div class="poll-report-img-placeholder">${PLACEHOLDER_EMOJI[Math.abs(poll.id.charCodeAt(0)-97)%PLACEHOLDER_EMOJI.length]}</div>`;
+    return `<div class="poll-report" id="report-${poll.id}">
       <div class="poll-report-header">
-        <div>
+        ${imgHtml}
+        <div class="poll-report-info">
           <div class="poll-report-question">${escHtml(poll.question)}</div>
           <div class="poll-report-meta">
-            <span>${poll.total_votes} votes</span>
-            <span>·</span>
-            <span>${poll.options.length} options</span>
-            <span>·</span>
+            <span>${total} votes</span><span>·</span>
+            <span>${(poll.options||[]).length} options</span><span>·</span>
             <span>Ended ${new Date(poll.end_date).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</span>
           </div>
         </div>
         <span class="concluded-tag">Concluded</span>
       </div>
-
       <div class="report-tabs">
         <button class="report-tab active" onclick="switchTab('${poll.id}','charts',this)">Charts</button>
         <button class="report-tab" onclick="switchTab('${poll.id}','insights',this)">AI Insights</button>
       </div>
-
       <div class="report-body">
-        <div id="tab-charts-${poll.id}">
-          ${renderChartsTab(poll)}
-        </div>
-        <div id="tab-insights-${poll.id}" style="display:none;">
+        <div id="tab-charts-${poll.id}">${renderChartsTab(poll)}</div>
+        <div id="tab-insights-${poll.id}" style="display:none">
           <div class="insights-area" id="insights-area-${poll.id}">
-            <div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:13px;">
-              Click "Load Insights" to generate AI analysis for this poll.
-            </div>
-            <div style="text-align:center;">
-              <button class="btn btn-accent" onclick="loadInsights('${poll.id}')">
-                ✦ Load AI Insights
-              </button>
-            </div>
+            <div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:13px">Click "Load Insights" to generate analysis for this poll.</div>
+            <div style="text-align:center"><button class="btn btn-gold" onclick="loadInsights('${poll.id}')">✦ Load AI Insights</button></div>
           </div>
         </div>
       </div>
-    </div>
-  `).join('');
-
-  // Draw charts after DOM is ready
-  polls.forEach(poll => drawCharts(poll));
-}
-
-// ── Charts tab HTML ───────────────────────────────────────────
-function renderChartsTab(poll) {
-  const maxVotes = Math.max(...poll.options.map(o => o.vote_count), 1);
-  const sorted = [...poll.options].sort((a,b) => b.vote_count - a.vote_count);
-
-  const tableRows = sorted.map((opt, i) => {
-    const pct = poll.total_votes > 0 ? ((opt.vote_count / poll.total_votes) * 100).toFixed(1) : '0.0';
-    const isWinner = i === 0 && opt.vote_count > 0;
-    return `
-      <tr>
-        <td class="${isWinner ? 'winner' : ''}">${escHtml(opt.option_text)}${isWinner ? ' 🏆' : ''}</td>
-        <td>${opt.vote_count}</td>
-        <td>${pct}%</td>
-        <td class="bar-cell">
-          <div class="mini-bar-wrap">
-            <div class="mini-bar" style="width:${pct}%"></div>
-          </div>
-        </td>
-      </tr>`;
-  }).join('');
-
-  return `
-    <div class="charts-grid">
-      <div class="chart-card">
-        <div class="chart-title">Vote Distribution</div>
-        <div class="chart-wrap"><canvas id="chart-bar-${poll.id}"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-title">Share Breakdown</div>
-        <div class="chart-wrap"><canvas id="chart-doughnut-${poll.id}"></canvas></div>
-      </div>
-    </div>
-    <table class="results-table" style="margin-top:1.5rem;">
-      <thead><tr><th>Option</th><th>Votes</th><th>Share</th><th>Distribution</th></tr></thead>
-      <tbody>${tableRows}</tbody>
-    </table>
-  `;
-}
-
-// ── Draw Chart.js charts ──────────────────────────────────────
-function drawCharts(poll) {
-  const labels = poll.options.map(o => o.option_text);
-  const data   = poll.options.map(o => o.vote_count);
-  const colors = poll.options.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]);
-
-  const gridColor  = 'rgba(255,255,255,0.05)';
-  const tickColor  = '#7a7b8a';
-  const fontFamily = "'DM Sans', sans-serif";
-
-  // Bar chart
-  const barCtx = document.getElementById('chart-bar-' + poll.id);
-  if (barCtx) {
-    new Chart(barCtx, {
-      type: 'bar',
-      data: { labels, datasets: [{ data, backgroundColor: colors, borderRadius: 6, borderSkipped: false }] },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { grid: { color: gridColor }, ticks: { color: tickColor, font: { family: fontFamily, size: 11 }, maxRotation: 30 } },
-          y: { grid: { color: gridColor }, ticks: { color: tickColor, font: { family: fontFamily, size: 11 }, precision: 0 }, beginAtZero: true }
-        }
-      }
-    });
-  }
-
-  // Doughnut chart
-  const dCtx = document.getElementById('chart-doughnut-' + poll.id);
-  if (dCtx) {
-    new Chart(dCtx, {
-      type: 'doughnut',
-      data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 2, borderColor: '#15161c' }] },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        cutout: '65%',
-        plugins: {
-          legend: {
-            position: 'right',
-            labels: { color: tickColor, font: { family: fontFamily, size: 11 }, padding: 12, boxWidth: 12 }
-          }
-        }
-      }
-    });
-  }
-}
-
-// ── Tab switching ─────────────────────────────────────────────
-function switchTab(pollId, tab, btn) {
-  document.querySelectorAll(`#report-${pollId} .report-tab`).forEach(t => t.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('tab-charts-'   + pollId).style.display = tab === 'charts'   ? '' : 'none';
-  document.getElementById('tab-insights-' + pollId).style.display = tab === 'insights' ? '' : 'none';
-}
-
-// ── Load AI Insights ──────────────────────────────────────────
-async function loadInsights(pollId, force = false) {
-  const area = document.getElementById('insights-area-' + pollId);
-  area.innerHTML = `
-    <div class="insights-loading">
-      <div class="spinner"></div>
-      <div>Generating AI analysis...</div>
-      <div style="font-size:11px;color:var(--muted);">This may take a few seconds</div>
     </div>`;
+  }).join('');
+  polls.forEach(poll=>drawCharts(poll));
+}
 
-  try {
-    const url = API + '/polls/' + pollId + '/insights' + (force ? '?regenerate=1' : '');
-    const res = await fetch(url, { headers: authHeaders() });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || 'Failed: ' + res.status);
-    }
-    const { insights, cached, generated_at } = await res.json();
-    renderInsights(pollId, insights, cached, generated_at);
-  } catch (e) {
-    area.innerHTML = `
-      <div class="error-msg">${e.message}</div>
-      <button class="btn regen-btn" onclick="loadInsights('${pollId}')">Try again</button>`;
+function renderChartsTab(poll){
+  const sorted=[...(poll.options||[])].sort((a,b)=>b.vote_count-a.vote_count);
+  const total=poll.total_votes||0;
+  const rows=sorted.map((opt,i)=>{
+    const pct=total>0?((opt.vote_count/total)*100).toFixed(1):'0.0';
+    const isWinner=i===0&&opt.vote_count>0;
+    return `<tr><td class="${isWinner?'winner-cell':''}">${escHtml(opt.option_text)}${isWinner?' 🏆':''}</td><td>${opt.vote_count}</td><td>${pct}%</td><td style="width:35%"><div class="mini-bar-wrap"><div class="mini-bar" style="width:${pct}%"></div></div></td></tr>`;
+  }).join('');
+  return `<div class="charts-grid">
+    <div class="chart-card"><div class="chart-title">Vote Distribution</div><div class="chart-wrap"><canvas id="chart-bar-${poll.id}"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Share Breakdown</div><div class="chart-wrap"><canvas id="chart-doughnut-${poll.id}"></canvas></div></div>
+  </div>
+  <table class="results-table" style="margin-top:1.25rem">
+    <thead><tr><th>Option</th><th>Votes</th><th>Share</th><th>Distribution</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+function drawCharts(poll){
+  const labels=(poll.options||[]).map(o=>o.option_text);
+  const data=(poll.options||[]).map(o=>o.vote_count);
+  const colors=(poll.options||[]).map((_,i)=>CHART_COLORS[i%CHART_COLORS.length]);
+  const grid='rgba(212,175,55,0.07)', tick='#8a8070', ff="'DM Sans',sans-serif";
+  const barCtx=document.getElementById('chart-bar-'+poll.id);
+  if(barCtx) new Chart(barCtx,{type:'bar',data:{labels,datasets:[{data,backgroundColor:colors,borderRadius:5,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:grid},ticks:{color:tick,font:{family:ff,size:11},maxRotation:30}},y:{grid:{color:grid},ticks:{color:tick,font:{family:ff,size:11},precision:0},beginAtZero:true}}}});
+  const dCtx=document.getElementById('chart-doughnut-'+poll.id);
+  if(dCtx) new Chart(dCtx,{type:'doughnut',data:{labels,datasets:[{data,backgroundColor:colors,borderWidth:2,borderColor:'#181818'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{position:'right',labels:{color:tick,font:{family:ff,size:11},padding:10,boxWidth:11}}}}});
+}
+
+function switchTab(pollId,tab,btn){
+  document.querySelectorAll(`#report-${pollId} .report-tab`).forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-charts-'+pollId).style.display=tab==='charts'?'':'none';
+  document.getElementById('tab-insights-'+pollId).style.display=tab==='insights'?'':'none';
+}
+
+async function loadInsights(pollId,force=false){
+  const area=document.getElementById('insights-area-'+pollId);
+  area.innerHTML=`<div class="insights-loading"><div class="spinner"></div><div>Analyzing poll results…</div><div style="font-size:11px;color:var(--muted2)">This may take a few seconds</div></div>`;
+  try{
+    const url=API+'/polls/'+pollId+'/insights'+(force?'?regenerate=1':'');
+    const res=await fetch(url,{headers:authHeaders()});
+    if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error||'Failed: '+res.status);}
+    const{insights,cached,generated_at}=await res.json();
+    renderInsights(pollId,insights,cached,generated_at);
+  }catch(e){
+    area.innerHTML=`<div class="error-msg">${e.message}</div><button class="btn btn-sm" style="margin-top:.5rem" onclick="loadInsights('${pollId}')">Try again</button>`;
   }
 }
 
-// ── Render markdown-ish insights ─────────────────────────────
-function renderInsights(pollId, text, cached, generatedAt) {
-  const area = document.getElementById('insights-area-' + pollId);
-
-  // Convert basic markdown to HTML
-  const html = text
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/^#{1,3}\s+(.+)$/gm, '<h3>$1</h3>')
-    .replace(/^\d+\.\s+\*\*(.+?)\*\*(.*)$/gm, '<h3>$1</h3><p>$2</p>')
-    .replace(/^[-*]\s+(.+)$/gm, '<li>$1</li>')
-    .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
-    .replace(/\n\n/g, '</p><p>')
-    .replace(/^(?!<[hup])/gm, '')
-    .replace(/<p><\/p>/g, '');
-
-  const genDate = new Date(generatedAt).toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
-
-  area.innerHTML = `
+function renderInsights(pollId,text,cached,generatedAt){
+  const area=document.getElementById('insights-area-'+pollId);
+  const html=text
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/^#{1,3}\s+(.+)$/gm,'<h3>$1</h3>')
+    .replace(/^\d+\.\s+\*\*(.+?)\*\*(.*)$/gm,'<h3>$1</h3><p>$2</p>')
+    .replace(/^[-*]\s+(.+)$/gm,'<li>$1</li>')
+    .replace(/(<li>[\s\S]*?<\/li>)/g,'<ul>$1</ul>')
+    .replace(/\n\n/g,'</p><p>');
+  const genDate=new Date(generatedAt).toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+  area.innerHTML=`
     <div class="ai-badge">
-      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1l1.5 3 3.5.5-2.5 2.5.5 3.5L6 9l-3 1.5.5-3.5L1 4.5 4.5 4z" fill="currentColor"/></svg>
-      AI Analysis by Claude
+      <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M6 1l1.5 3 3.5.5-2.5 2.5.5 3.5L6 9l-3 1.5.5-3.5L1 4.5 4.5 4z" fill="currentColor"/></svg>
+      PollSpace Analysis
     </div>
     <div class="insights-content">${html}</div>
     <div class="insights-meta">
-      ${cached ? 'Cached analysis' : 'Freshly generated'} · ${genDate}
-      <button class="btn regen-btn" onclick="loadInsights('${pollId}', true)" style="margin-left:12px;">Regenerate</button>
-    </div>
-  `;
+      ${cached?'Cached analysis':'Freshly generated'} · ${genDate}
+      <button class="btn btn-sm" style="margin-left:10px" onclick="loadInsights('${pollId}',true)">Regenerate</button>
+    </div>`;
 }
 
-// ── Utils ─────────────────────────────────────────────────────
-function escHtml(str) {
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-// ── Init ──────────────────────────────────────────────────────
-if (psAdmin) {
-  const badge = document.getElementById('admin-name-badge');
-  if (badge) badge.textContent = psAdmin.name;
-}
 loadDashboard();
 </script>
 </body>
