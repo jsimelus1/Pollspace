@@ -29,6 +29,21 @@
     .nav-logo{display:flex;align-items:center;text-decoration:none}
     .nav-right{display:flex;align-items:center;gap:8px}
     .admin-pill{font-size:12px;color:var(--muted);padding:4px 12px;border-radius:999px;background:var(--surface2);border:1px solid var(--border)}
+    .hamburger{display:none;flex-direction:column;justify-content:center;align-items:center;gap:5px;width:40px;height:40px;background:none;border:1px solid var(--border2);border-radius:var(--radius-sm);cursor:pointer;flex-shrink:0;transition:border-color .15s}
+    .hamburger:hover{border-color:var(--accent)}
+    .hamburger span{display:block;width:18px;height:2px;background:var(--text);border-radius:999px;transition:all .25s}
+    .hamburger.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+    .hamburger.open span:nth-child(2){opacity:0;transform:scaleX(0)}
+    .hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+    .nav-drawer{display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:49;background:rgba(0,0,0,.6);backdrop-filter:blur(4px)}
+    .nav-drawer.open{display:block}
+    .nav-drawer-panel{position:absolute;top:0;right:0;bottom:0;width:260px;background:var(--surface);border-left:1px solid var(--border2);padding:1.5rem 1.25rem;display:flex;flex-direction:column;gap:6px;transform:translateX(100%);transition:transform .25s cubic-bezier(.4,0,.2,1);overflow-y:auto}
+    .nav-drawer.open .nav-drawer-panel{transform:translateX(0)}
+    .drawer-logo{margin-bottom:1.25rem;padding-bottom:1.25rem;border-bottom:1px solid var(--border)}
+    .drawer-item{display:flex;align-items:center;gap:10px;width:100%;padding:.75rem 1rem;border-radius:var(--radius-sm);font-size:14px;font-weight:500;color:var(--text);background:none;border:none;cursor:pointer;font-family:inherit;text-decoration:none;transition:background .15s}
+    .drawer-item:hover{background:var(--surface2)}
+    .drawer-divider{height:1px;background:var(--border);margin:.5rem 0}
+    @media(max-width:680px){.nav-right{display:none}.hamburger{display:flex}nav{padding:.5rem 1.25rem}}
 
     /* ── BUTTONS ── */
     .btn{display:inline-flex;align-items:center;gap:6px;padding:.5rem 1rem;border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;border:1px solid var(--border2);background:var(--surface2);color:var(--text);transition:all .18s;text-decoration:none}
@@ -172,12 +187,28 @@
 <nav>
   <a href="/" class="nav-logo">
     <img src="/logo.png" alt="Pollytics" style="height:152px;width:auto;display:block"/>
+  </a>
   <div class="nav-right">
     <span class="admin-pill" id="admin-name-badge"></span>
     <a href="/" class="btn btn-sm">← Polls</a>
     <button class="btn btn-sm" onclick="signOut()">Sign out</button>
   </div>
+  <button class="hamburger" id="hamburger-btn" onclick="toggleDrawer()" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
 </nav>
+
+<div class="nav-drawer" id="nav-drawer" onclick="closeDrawer(event)">
+  <div class="nav-drawer-panel">
+    <div class="drawer-logo">
+      <img src="/logo.png" alt="Pollytics" style="height:60px;width:auto"/>
+    </div>
+    <div id="drawer-user" style="font-size:12px;color:var(--muted);padding:.25rem 1rem .75rem;"></div>
+    <a href="/" class="drawer-item">← Back to Polls</a>
+    <div class="drawer-divider"></div>
+    <button class="drawer-item" onclick="signOut()">↩ Sign out</button>
+  </div>
+</div>
 
 <main>
   <div class="page-header">
@@ -224,7 +255,26 @@ if(psAdmin){
   if(badge) badge.textContent = psAdmin.name;
   const greeting = document.getElementById('admin-greeting');
   if(greeting) greeting.textContent = 'Welcome back, ' + psAdmin.name;
+  const drawerUser = document.getElementById('drawer-user');
+  if(drawerUser) drawerUser.textContent = '👤 ' + psAdmin.name;
 }
+
+function toggleDrawer(){
+  const drawer = document.getElementById('nav-drawer');
+  const btn    = document.getElementById('hamburger-btn');
+  const open   = drawer.classList.toggle('open');
+  btn.classList.toggle('open', open);
+  document.body.style.overflow = open ? 'hidden' : '';
+}
+function closeDrawer(e){
+  if(e && e.target !== document.getElementById('nav-drawer')) return;
+  const drawer = document.getElementById('nav-drawer');
+  const btn    = document.getElementById('hamburger-btn');
+  drawer.classList.remove('open');
+  btn.classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeDrawer({}); });
 
 // ── Load dashboard ─────────────────────────────────────────────
 async function loadDashboard(){

@@ -35,6 +35,48 @@
     .nav-right{display:flex;align-items:center;gap:8px}
     .nav-link{font-size:13px;color:var(--muted);background:none;border:none;cursor:pointer;font-family:inherit;padding:.4rem .7rem;border-radius:var(--radius-sm);transition:color .15s;text-decoration:none}
     .nav-link:hover{color:var(--text)}
+
+    /* ── HAMBURGER ── */
+    .hamburger{display:none;flex-direction:column;justify-content:center;align-items:center;gap:5px;width:40px;height:40px;background:none;border:1px solid var(--border2);border-radius:var(--radius-sm);cursor:pointer;flex-shrink:0;transition:border-color .15s}
+    .hamburger:hover{border-color:var(--accent)}
+    .hamburger span{display:block;width:18px;height:2px;background:var(--text);border-radius:999px;transition:all .25s}
+    .hamburger.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+    .hamburger.open span:nth-child(2){opacity:0;transform:scaleX(0)}
+    .hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+
+    /* ── MOBILE DRAWER ── */
+    .nav-drawer{
+      display:none;
+      position:fixed;top:0;left:0;right:0;bottom:0;
+      z-index:49;
+      background:rgba(0,0,0,.6);
+      backdrop-filter:blur(4px);
+    }
+    .nav-drawer.open{display:block}
+    .nav-drawer-panel{
+      position:absolute;top:0;right:0;bottom:0;
+      width:260px;
+      background:var(--surface);
+      border-left:1px solid var(--border2);
+      padding:1.5rem 1.25rem;
+      display:flex;flex-direction:column;gap:6px;
+      transform:translateX(100%);
+      transition:transform .25s cubic-bezier(.4,0,.2,1);
+      overflow-y:auto;
+    }
+    .nav-drawer.open .nav-drawer-panel{transform:translateX(0)}
+    .drawer-logo{margin-bottom:1.25rem;padding-bottom:1.25rem;border-bottom:1px solid var(--border)}
+    .drawer-item{display:flex;align-items:center;gap:10px;width:100%;padding:.75rem 1rem;border-radius:var(--radius-sm);font-size:14px;font-weight:500;color:var(--text);background:none;border:none;cursor:pointer;font-family:inherit;text-decoration:none;transition:background .15s}
+    .drawer-item:hover{background:var(--surface2)}
+    .drawer-item.gold{background:var(--accent);color:#0a0a0a;font-weight:700;margin-top:.5rem}
+    .drawer-item.gold:hover{background:var(--accent2)}
+    .drawer-divider{height:1px;background:var(--border);margin:.5rem 0}
+
+    @media(max-width:680px){
+      .nav-right{display:none}
+      .hamburger{display:flex}
+      nav{padding:.75rem 1.25rem}
+    }
     .btn{display:inline-flex;align-items:center;gap:6px;padding:.55rem 1.1rem;border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;border:1px solid var(--border2);background:var(--surface2);color:var(--text);transition:all .18s;text-decoration:none}
     .btn:hover{background:var(--surface3);border-color:var(--border3)}
     .btn:active{transform:scale(.97)}
@@ -243,7 +285,8 @@
     footer a{color:var(--muted);text-decoration:none}
     footer a:hover{color:var(--accent)}
 
-    @media(max-width:480px){nav{padding:.85rem 1rem}main{padding:1.5rem .85rem}.hero-title{font-size:2rem}.stats-strip{grid-template-columns:1fr 1fr}.stats-strip .stat-item:last-child{grid-column:1/-1}}
+    @media(max-width:680px){.nav-right{display:none}.hamburger{display:flex}nav{padding:.5rem 1.25rem}}
+    @media(max-width:480px){main{padding:1.5rem .85rem}.hero-title{font-size:1.8rem}.stats-strip{grid-template-columns:1fr 1fr}.stats-strip .stat-item:last-child{grid-column:1/-1}.poll-card{grid-template-columns:auto 1fr}.poll-card-img,.poll-card-img-placeholder{width:64px;height:64px}}
   </style>
 </head>
 <body>
@@ -262,7 +305,34 @@
       New poll
     </button>
   </div>
+  <!-- Hamburger (mobile only) -->
+  <button class="hamburger" id="hamburger-btn" onclick="toggleDrawer()" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
 </nav>
+
+<!-- Mobile drawer -->
+<div class="nav-drawer" id="nav-drawer" onclick="closeDrawer(event)">
+  <div class="nav-drawer-panel">
+    <div class="drawer-logo">
+      <img src="/logo.png" alt="Pollytics" style="height:60px;width:auto"/>
+    </div>
+    <button class="drawer-item" onclick="closeDrawer();requireAuthAction('create')">
+      <svg width="14" height="14" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      New poll
+    </button>
+    <a href="/dashboard.html" class="drawer-item" id="drawer-dashboard" style="display:none">
+      📊 Dashboard
+    </a>
+    <button class="drawer-item" onclick="closeDrawer();showAdmin()" id="drawer-admin" style="display:none">
+      🗳️ My Polls
+    </button>
+    <div class="drawer-divider"></div>
+    <a href="/login.html" class="drawer-item" id="drawer-login">🔑 Sign in</a>
+    <button class="drawer-item" onclick="doLogout()" id="drawer-logout" style="display:none">↩ Sign out</button>
+    <div id="drawer-user" style="font-size:12px;color:var(--muted);padding:.5rem 1rem;display:none"></div>
+  </div>
+</div>
 
 <div style="min-height:100vh;display:grid;grid-template-rows:auto 1fr auto;">
 <main>
@@ -420,6 +490,24 @@
 </div>
 
 <script>
+// ── Hamburger drawer ─────────────────────────────────────────
+function toggleDrawer(){
+  const drawer = document.getElementById('nav-drawer');
+  const btn    = document.getElementById('hamburger-btn');
+  const open   = drawer.classList.toggle('open');
+  btn.classList.toggle('open', open);
+  document.body.style.overflow = open ? 'hidden' : '';
+}
+function closeDrawer(e){
+  if(e && e.target !== document.getElementById('nav-drawer')) return;
+  const drawer = document.getElementById('nav-drawer');
+  const btn    = document.getElementById('hamburger-btn');
+  drawer.classList.remove('open');
+  btn.classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeDrawer({}); });
+
 // ════════════════════════════════════
 //  CONFIG & AUTH
 // ════════════════════════════════════
@@ -448,6 +536,7 @@ function requireAuthAction(action){
 function updateAuthUI(){
   const loggedIn = isLoggedIn();
   const admin = getAdmin();
+  // Desktop nav
   document.getElementById('header-login').style.display     = loggedIn ? 'none' : '';
   document.getElementById('header-logout').style.display    = loggedIn ? '' : 'none';
   document.getElementById('header-dashboard').style.display = loggedIn ? '' : 'none';
@@ -455,6 +544,17 @@ function updateAuthUI(){
   const heroDb = document.getElementById('hero-dashboard-btn');
   if(heroDb) heroDb.style.display = loggedIn ? '' : 'none';
   if(loggedIn && admin) document.getElementById('header-logout').textContent = admin.name + ' · Sign out';
+  // Mobile drawer
+  const dLogin   = document.getElementById('drawer-login');
+  const dLogout  = document.getElementById('drawer-logout');
+  const dDash    = document.getElementById('drawer-dashboard');
+  const dAdmin   = document.getElementById('drawer-admin');
+  const dUser    = document.getElementById('drawer-user');
+  if(dLogin)  dLogin.style.display  = loggedIn ? 'none' : '';
+  if(dLogout) dLogout.style.display = loggedIn ? '' : 'none';
+  if(dDash)   dDash.style.display   = loggedIn ? '' : 'none';
+  if(dAdmin)  dAdmin.style.display  = loggedIn ? '' : 'none';
+  if(dUser)   { dUser.style.display = loggedIn && admin ? '' : 'none'; if(admin) dUser.textContent = '👤 ' + admin.name; }
 }
 function authHeaders(){ const t=getToken(); return t ? {'Content-Type':'application/json','Authorization':'Bearer '+t} : {'Content-Type':'application/json'}; }
 
