@@ -41,6 +41,7 @@ async function initSchema() {
       CREATE TABLE IF NOT EXISTS polls (
         id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         question    TEXT NOT NULL,
+        image_url   TEXT DEFAULT '',
         description TEXT DEFAULT '',
         end_date    TIMESTAMPTZ,
         created_by  UUID REFERENCES admins(id) ON DELETE SET NULL,
@@ -49,6 +50,7 @@ async function initSchema() {
     `);
     // Migrations for existing installs
     await client.query(`ALTER TABLE polls ADD COLUMN IF NOT EXISTS end_date   TIMESTAMPTZ`);
+    await client.query(`ALTER TABLE polls ADD COLUMN IF NOT EXISTS image_url  TEXT DEFAULT ''`);
     await client.query(`ALTER TABLE polls ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES admins(id) ON DELETE SET NULL`);
     console.log('polls table ready');
 
@@ -118,6 +120,7 @@ async function buildPoll(pollRow) {
     id:          pollRow.id,
     question:    pollRow.question,
     description: pollRow.description,
+    image_url:   pollRow.image_url || '',
     end_date:    pollRow.end_date,
     created_at:  pollRow.created_at,
     created_by:  pollRow.created_by,
@@ -132,31 +135,52 @@ async function generateInsights(poll) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY not set');
 
-  const optionsSummary = poll.options
-    .sort((a, b) => b.vote_count - a.vote_count)
-    .map((o, i) => {
-      const pct = poll.total_votes > 0
-        ? ((o.vote_count / poll.total_votes) * 100).toFixed(1) : '0.0';
-      return `${i + 1}. "${o.option_text}" — ${o.vote_count} votes (${pct}%)`;
-    }).join('\n');
+  const sorted = [...poll.options].sort((a, b) => b.vote_count - a.vote_count);
+  const optionsSummary = sorted.map((o, i) => {
+    const pct = poll.total_votes > 0
+      ? ((o.vote_count / poll.total_votes) * 100).toFixed(1) : '0.0';
+    return `${i + 1}. "${o.option_text}" — ${o.vote_count} votes (${pct}%)`;
+  }).join('\n');
 
-  const prompt = `You are a data analyst presenting poll results to stakeholders.
+  const winner = sorted[0];
+  const winnerPct = poll.total_votes > 0
+    ? ((winner.vote_count / poll.total_votes) * 100).toFixed(1) : '0';
+  const daysRan = poll.end_date && poll.created_at
+    ? Math.max(1, Math.round((new Date(poll.end_date) - new Date(poll.created_at)) / 86400000))
+    : null;
+
+  const prompt = `You are a senior data analyst preparing a stakeholder report on poll results.
 
 Poll question: "${poll.question}"
 ${poll.description ? `Context: ${poll.description}` : ''}
-Total votes: ${poll.total_votes}
-Poll ran from: ${new Date(poll.created_at).toDateString()} to ${new Date(poll.end_date).toDateString()}
+Total votes cast: ${poll.total_votes}
+${daysRan ? `Poll duration: ${daysRan} day${daysRan !== 1 ? 's' : ''}` : ''}
+Poll ran: ${new Date(poll.created_at).toDateString()} to ${new Date(poll.end_date).toDateString()}
+Winning option: "${winner.option_text}" with ${winner.vote_count} votes (${winnerPct}%)
 
-Results:
+Full results (ranked):
 ${optionsSummary}
 
-Please provide a structured analysis with the following sections:
-1. **Key Finding** - One sentence summary of the most important result
-2. **Insights** - 3 bullet points interpreting what the data means
-3. **Recommendations** - 3 actionable recommendations for stakeholders based on these results
-4. **Watch Out For** - One potential caveat or limitation of this data
-
-Keep the tone professional and concise. Focus on actionable insights.`;
+Respond ONLY with a valid JSON object — no markdown, no code fences, no preamble. Use this exact structure:
+{
+  "key_finding": "One powerful sentence about the most important result",
+  "summary": "Two to three sentences interpreting what the overall distribution means for decision makers",
+  "insights": [
+    { "icon": "📊", "title": "Short title", "body": "One to two sentence insight" },
+    { "icon": "🔍", "title": "Short title", "body": "One to two sentence insight" },
+    { "icon": "💡", "title": "Short title", "body": "One to two sentence insight" }
+  ],
+  "recommendations": [
+    { "priority": "High", "title": "Short action title", "body": "Specific actionable recommendation for stakeholders", "rationale": "Why this matters based on the data" },
+    { "priority": "Medium", "title": "Short action title", "body": "Specific actionable recommendation for stakeholders", "rationale": "Why this matters based on the data" },
+    { "priority": "Low", "title": "Short action title", "body": "Specific actionable recommendation for stakeholders", "rationale": "Why this matters based on the data" }
+  ],
+  "data_quality": {
+    "score": <integer 1-10 rating the reliability of this data>,
+    "note": "One sentence about data quality, sample size, or limitations stakeholders should know"
+  },
+  "sentiment": "<one of: strongly_positive | positive | neutral | mixed | negative | strongly_negative — reflecting how favorable the winning result is for typical organizational goals>"
+}`;
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -167,7 +191,7 @@ Keep the tone professional and concise. Focus on actionable insights.`;
     },
     body: JSON.stringify({
       model: 'claude-opus-4-5',
-      max_tokens: 600,
+      max_tokens: 1200,
       messages: [{ role: 'user', content: prompt }],
     }),
   });
@@ -177,7 +201,15 @@ Keep the tone professional and concise. Focus on actionable insights.`;
     throw new Error(err.error?.message || 'Claude API error: ' + response.status);
   }
   const data = await response.json();
-  return data.content[0].text;
+  const raw = data.content[0].text.trim();
+
+  // Validate it's parseable JSON before storing
+  try {
+    JSON.parse(raw);
+  } catch {
+    throw new Error('AI returned invalid JSON — please try regenerating');
+  }
+  return raw;
 }
 
 // ════════════════════════════════════════════════════════════
@@ -261,7 +293,7 @@ app.get('/api/auth/me', requireAuth, async (req, res) => {
 app.get('/api/polls', async (req, res) => {
   try {
     const { rows: pollRows } = await pool.query(
-      `SELECT id, question, description, end_date, created_by, created_at
+      `SELECT id, question, description, image_url, end_date, created_by, created_at
        FROM polls
        WHERE end_date IS NULL OR end_date > NOW()
        ORDER BY created_at DESC`
@@ -278,7 +310,7 @@ app.get('/api/polls', async (req, res) => {
 app.get('/api/polls/concluded', requireAuth, async (req, res) => {
   try {
     const { rows: pollRows } = await pool.query(
-      `SELECT id, question, description, end_date, created_by, created_at
+      `SELECT id, question, description, image_url, end_date, created_by, created_at
        FROM polls
        WHERE end_date IS NOT NULL AND end_date <= NOW()
          AND created_by = $1
@@ -297,7 +329,7 @@ app.get('/api/polls/concluded', requireAuth, async (req, res) => {
 app.get('/api/polls/:id', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT id, question, description, end_date, created_by, created_at
+      `SELECT id, question, description, image_url, end_date, created_by, created_at
        FROM polls WHERE id = $1`,
       [req.params.id]
     );
@@ -311,7 +343,7 @@ app.get('/api/polls/:id', async (req, res) => {
 
 // POST /api/polls — protected, links poll to admin
 app.post('/api/polls', requireAuth, async (req, res) => {
-  const { question, description = '', options, end_date } = req.body;
+  const { question, description = '', options, end_date, image_url = '' } = req.body;
   if (!question?.trim())
     return res.status(400).json({ error: 'Question is required' });
   if (!Array.isArray(options) || options.length < 2)
@@ -323,10 +355,10 @@ app.post('/api/polls', requireAuth, async (req, res) => {
   try {
     await client.query('BEGIN');
     const { rows: [poll] } = await client.query(
-      `INSERT INTO polls (question, description, end_date, created_by)
-       VALUES ($1, $2, $3, $4)
-       RETURNING id, question, description, end_date, created_by, created_at`,
-      [question.trim(), description.trim(), new Date(end_date), req.admin.id]
+      `INSERT INTO polls (question, description, image_url, end_date, created_by)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id, question, description, image_url, end_date, created_by, created_at`,
+      [question.trim(), description.trim(), image_url.trim(), new Date(end_date), req.admin.id]
     );
     const insertedOptions = [];
     for (const text of options) {
@@ -387,7 +419,7 @@ app.post('/api/polls/:id/vote', async (req, res) => {
 app.get('/api/polls/:id/insights', requireAuth, async (req, res) => {
   try {
     const { rows: pollRows } = await pool.query(
-      `SELECT id, question, description, end_date, created_by, created_at
+      `SELECT id, question, description, image_url, end_date, created_by, created_at
        FROM polls WHERE id = $1`, [req.params.id]
     );
     if (!pollRows.length) return res.status(404).json({ error: 'Poll not found' });
