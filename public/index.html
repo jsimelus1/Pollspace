@@ -119,6 +119,11 @@
     .poll-card-meta .voted{color:var(--accent);font-weight:600}
     .poll-card-arrow{padding:0 1.1rem;color:var(--muted);font-size:20px;transition:all .2s}
     .poll-card:hover .poll-card-arrow{color:var(--accent);transform:translateX(3px)}
+    .share-btn{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:999px;background:var(--surface2);border:1px solid var(--border2);color:var(--muted);cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap}
+    .share-btn:hover{border-color:var(--accent);color:var(--accent);background:rgba(212,175,55,.06)}
+    .share-btn.copied{border-color:var(--accent);color:var(--accent);background:rgba(212,175,55,.1)}
+    .share-bar{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:1.5rem}
+    .share-bar-url{flex:1;font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'DM Sans',sans-serif}
 
     /* Empty state */
     .empty{text-align:center;padding:4rem 1rem;color:var(--muted)}
@@ -603,6 +608,12 @@ async function renderList(){
           ${poll.end_date ? `<div class="dot"></div><span>Ends ${new Date(poll.end_date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</span>` : ''}
           ${hasVoted ? `<div class="dot"></div><span class="voted">✓ Voted</span>` : `<div class="dot"></div><span>Vote now</span>`}
         </div>
+        <div style="margin-top:.6rem">
+          <button class="share-btn" id="share-card-${poll.id}" onclick="event.stopPropagation();sharePoll('${poll.id}','share-card-${poll.id}')">
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M8 1.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zM1.5 6a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0zM8 7.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zM3.1 6.65l2.85 1.7M5.95 3.65 3.1 5.35" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+            Share
+          </button>
+        </div>
       </div>
       <div class="poll-card-arrow">›</div>
     </div>`;
@@ -669,7 +680,14 @@ function renderVoteView(){
         <button class="btn btn-gold" id="vote-submit-btn" onclick="castVote()" ${selectedOptionId?'':'disabled'} style="${selectedOptionId?'':'opacity:.4;cursor:default;'}">${selectedOptionId?'Submit vote':'Select an option'}</button>
        </div>`;
 
+  const shareUrl = getPollUrl(poll.id);
+
   document.getElementById('vote-content').innerHTML=`
+    <div class="share-bar">
+      <svg width="13" height="13" viewBox="0 0 12 12" fill="none" style="flex-shrink:0;color:var(--accent)"><path d="M8 1.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zM1.5 6a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0zM8 7.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zM3.1 6.65l2.85 1.7M5.95 3.65 3.1 5.35" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      <span class="share-bar-url">${shareUrl}</span>
+      <button class="share-btn" id="share-vote-btn" onclick="sharePoll('${poll.id}','share-vote-btn')">Copy link</button>
+    </div>
     ${imgHtml}
     <div class="poll-question">${escHtml(poll.question)}</div>
     ${poll.desc?`<div class="poll-subtitle">${escHtml(poll.desc)}</div>`:`<div class="poll-subtitle">${poll.options.length} options · pick one</div>`}
@@ -934,10 +952,65 @@ async function deletePoll(id){
 document.getElementById('delete-modal').addEventListener('click',function(e){ if(e.target===this) closeModal(); });
 
 // ════════════════════════════════════
-//  INIT
+//  SHARE & DEEP LINK
 // ════════════════════════════════════
+function getPollUrl(pollId){
+  return window.location.origin + window.location.pathname + '#poll/' + pollId;
+}
+
+function sharePoll(pollId, btnId){
+  const url = getPollUrl(pollId);
+  const btn = document.getElementById(btnId);
+
+  // Update URL bar so it's easy to copy manually too
+  history.replaceState(null, '', '#poll/' + pollId);
+
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(url).then(() => {
+      if(btn){
+        const orig = btn.innerHTML;
+        btn.classList.add('copied');
+        btn.innerHTML = '✓ Copied!';
+        setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = orig; }, 2000);
+      }
+    });
+  } else {
+    // Fallback for older browsers
+    const ta = document.createElement('textarea');
+    ta.value = url;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    if(btn){
+      const orig = btn.innerHTML;
+      btn.classList.add('copied');
+      btn.innerHTML = '✓ Copied!';
+      setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = orig; }, 2000);
+    }
+  }
+}
+
+// Reset URL hash when going back to list
+const _origShowList = showList;
+// Override showList to clear hash
+function showList(){
+  history.replaceState(null, '', window.location.pathname);
+  renderList();
+  showView('list');
+}
+
 updateAuthUI();
-renderList();
+
+// Handle direct poll share links e.g. /#poll/uuid
+const hashMatch = window.location.hash.match(/^#poll\/([a-f0-9-]{36})$/i);
+if(hashMatch){
+  openPoll(hashMatch[1]);
+} else {
+  renderList();
+}
 </script>
 </body>
 </html>
