@@ -31,8 +31,7 @@
       border-bottom:1px solid var(--border);
       backdrop-filter:blur(16px);
     }
-    .nav-logo{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800;letter-spacing:-.03em;display:flex;align-items:center;gap:10px;cursor:pointer;line-height:1}
-    .nav-logo-dot{width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 14px var(--accent);animation:pulse 2.5s ease-in-out infinite}
+    .nav-logo{display:flex;align-items:center;cursor:pointer;text-decoration:none}
     .nav-right{display:flex;align-items:center;gap:8px}
     .nav-link{font-size:13px;color:var(--muted);background:none;border:none;cursor:pointer;font-family:inherit;padding:.4rem .7rem;border-radius:var(--radius-sm);transition:color .15s;text-decoration:none}
     .nav-link:hover{color:var(--text)}
@@ -250,12 +249,8 @@
 <body>
 
 <nav>
-  <div class="nav-logo" onclick="showList()">
-    <div class="nav-logo-dot"></div>
-    <div>
-      <div>Pollytics</div>
-      <div style="font-family:'DM Sans',sans-serif;font-size:.65rem;font-weight:400;color:var(--muted);letter-spacing:.04em;margin-top:1px">Where Polls Meets Analytics</div>
-    </div>
+  <div class="nav-logo" onclick="showList()" style="cursor:pointer">
+    <img src="/logo.png" alt="Pollytics" style="height:38px;width:auto;display:block"/>
   </div>
   <div class="nav-right">
     <a href="/dashboard.html" class="nav-link" id="header-dashboard" style="display:none;">Dashboard</a>

@@ -26,8 +26,7 @@
 
     /* ── NAV ── */
     nav{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:1rem 2rem;background:rgba(10,10,10,0.93);border-bottom:1px solid var(--border);backdrop-filter:blur(16px)}
-    .nav-logo{font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:800;letter-spacing:-.03em;display:flex;align-items:center;gap:9px;text-decoration:none;color:var(--text);line-height:1}
-    .nav-logo-dot{width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 14px var(--accent);animation:pulse 2.5s ease-in-out infinite;flex-shrink:0}
+    .nav-logo{display:flex;align-items:center;text-decoration:none}
     .nav-right{display:flex;align-items:center;gap:8px}
     .admin-pill{font-size:12px;color:var(--muted);padding:4px 12px;border-radius:999px;background:var(--surface2);border:1px solid var(--border)}
 
@@ -172,12 +171,7 @@
 
 <nav>
   <a href="/" class="nav-logo">
-    <div class="nav-logo-dot"></div>
-    <div>
-      <div>Pollytics</div>
-      <div style="font-family:'DM Sans',sans-serif;font-size:.65rem;font-weight:400;color:var(--muted);letter-spacing:.04em;margin-top:1px">Where Polls Meets Analytics</div>
-    </div>
-  </a>
+    <img src="/logo.png" alt="Pollytics" style="height:38px;width:auto;display:block"/>
   <div class="nav-right">
     <span class="admin-pill" id="admin-name-badge"></span>
     <a href="/" class="btn btn-sm">← Polls</a>
