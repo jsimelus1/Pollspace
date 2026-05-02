@@ -235,12 +235,12 @@ if(psAdmin){
 // ── Load dashboard ─────────────────────────────────────────────
 async function loadDashboard(){
   try{
-    const res = await fetch(API+'/polls/concluded', {headers:authHeaders()});
+    const res = await fetch(API+'/concluded', {headers:authHeaders()});
     if(res.status===401){ location.href='/login.html?redirect=/dashboard.html'; return; }
     if(!res.ok) throw new Error('Request failed: '+res.status);
-    const polls = await res.json();
-    renderStats(polls);
-    renderPolls(polls);
+    const items = await res.json();
+    renderStats(items);
+    renderPolls(items);
   } catch(e){
     document.getElementById('polls-container').innerHTML =
       `<div class="error-msg">Failed to load dashboard: ${e.message}</div>`;
@@ -248,31 +248,33 @@ async function loadDashboard(){
 }
 
 // ── Stats ──────────────────────────────────────────────────────
-function renderStats(polls){
-  const totalVotes = polls.reduce((s,p)=>s+(p.total_votes||0),0);
-  const avg = polls.length ? Math.round(totalVotes/polls.length) : 0;
-  const latest = polls.length ? new Date(polls[0].end_date).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '—';
+function renderStats(items){
+  const totalVotes = items.reduce((s,i)=>s+(i.total_votes||i.total_responses||0),0);
+  const avg = items.length ? Math.round(totalVotes/items.length) : 0;
+  const latest = items.length ? new Date(items[0].end_date).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '—';
+  const pCount = items.filter(i=>i.type==='poll').length;
+  const sCount = items.filter(i=>i.type==='survey').length;
   document.getElementById('stats-row').innerHTML = `
-    <div class="stat-card"><div class="stat-label">Concluded Polls</div><div class="stat-value">${polls.length}</div><div class="stat-desc">Ready for analysis</div></div>
-    <div class="stat-card"><div class="stat-label">Total Votes</div><div class="stat-value">${totalVotes.toLocaleString()}</div><div class="stat-desc">Across all polls</div></div>
-    <div class="stat-card"><div class="stat-label">Avg Votes / Poll</div><div class="stat-value">${avg}</div><div class="stat-desc">Participation rate</div></div>
+    <div class="stat-card"><div class="stat-label">Concluded</div><div class="stat-value">${items.length}</div><div class="stat-desc">${pCount} poll${pCount!==1?'s':''}, ${sCount} survey${sCount!==1?'s':''}</div></div>
+    <div class="stat-card"><div class="stat-label">Total Responses</div><div class="stat-value">${totalVotes.toLocaleString()}</div><div class="stat-desc">Across all items</div></div>
+    <div class="stat-card"><div class="stat-label">Avg / Item</div><div class="stat-value">${avg}</div><div class="stat-desc">Participation rate</div></div>
     <div class="stat-card"><div class="stat-label">Most Recent</div><div class="stat-value" style="font-size:1.35rem">${latest}</div><div class="stat-desc">Last concluded</div></div>`;
 }
 
 // ── Poll reports ───────────────────────────────────────────────
-function renderPolls(polls){
+function renderPolls(items){
   const container = document.getElementById('polls-container');
-  if(!polls.length){
+  if(!items.length){
     container.innerHTML = `<div class="empty-state">
       <div class="empty-icon">📊</div>
-      <h3>No concluded polls yet</h3>
-      <p>Polls appear here once their end date has passed.</p>
-      <br><a href="/" class="btn btn-gold" style="display:inline-flex;margin:0 auto">Create a poll</a>
+      <h3>No concluded polls or surveys yet</h3>
+      <p>Items appear here once their end date has passed.</p>
+      <br><a href="/" class="btn btn-gold" style="display:inline-flex;margin:0 auto">Create a poll or survey</a>
     </div>`;
     return;
   }
 
-  container.innerHTML = polls.map(poll => {
+  container.innerHTML = items.map(poll => {
     const total = poll.total_votes || 0;
     const imgHtml = poll.image_url
       ? `<img class="poll-report-img" src="${escHtml(poll.image_url)}" alt="" loading="lazy"/>`
@@ -305,9 +307,9 @@ function renderPolls(polls){
               <div style="font-size:2rem;margin-bottom:.75rem">✦</div>
               <div style="font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;margin-bottom:.4rem">AI-Powered Analysis</div>
               <div style="font-size:13px;color:var(--muted);margin-bottom:1.25rem;max-width:360px;margin-left:auto;margin-right:auto">
-                Generate data-driven insights, stakeholder recommendations, and a quality assessment for this poll.
+                Generate data-driven insights and stakeholder recommendations.
               </div>
-              <button class="btn btn-gold" onclick="loadInsights('${poll.id}')">
+              <button class="btn btn-gold" onclick="currentInsightType=this.closest('.poll-report').dataset.itemtype||'poll';loadInsights('${poll.id}',currentInsightType)">
                 ✦ Generate Analysis
               </button>
             </div>
@@ -317,7 +319,7 @@ function renderPolls(polls){
     </div>`;
   }).join('');
 
-  polls.forEach(poll => drawCharts(poll));
+  items.forEach(poll => { if(poll.type==="survey") drawSurveyCharts(poll); else drawCharts(poll); });
 }
 
 // ── Charts tab ─────────────────────────────────────────────────
@@ -405,12 +407,49 @@ function drawCharts(poll){
   });
 }
 
-// ── Tab switch ────────────────────────────────────────────────
+// ── Survey charts ──────────────────────────────────────────────
+let currentInsightType = 'poll';
+
+function renderSurveyChartsTab(survey){
+  const qs = survey.questions || [];
+  const sections = qs.map((q, qi) => {
+    const sorted = [...(q.options||[])].sort((a,b)=>b.vote_count-a.vote_count);
+    const total  = sorted.reduce((s,o)=>s+(o.vote_count||0),0);
+    const rows   = sorted.map((opt,i)=>{
+      const pct = total>0?((opt.vote_count/total)*100).toFixed(1):'0.0';
+      return `<tr><td class="${i===0?'winner-cell':''}">${escHtml(opt.option_text)}${i===0?' 🏆':''}</td><td>${opt.vote_count||0}</td><td style="color:var(--accent);font-weight:600">${pct}%</td></tr>`;
+    }).join('');
+    return `<div style="margin-bottom:1.5rem">
+      <div style="font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.75rem">Q${qi+1}: ${escHtml(q.question)}</div>
+      <div class="charts-grid" style="margin-bottom:.75rem">
+        <div class="chart-card"><div class="chart-title">Distribution</div><div class="chart-wrap"><canvas id="chart-bar-${survey.id}-${qi}"></canvas></div></div>
+        <div class="chart-card"><div class="chart-title">Share</div><div class="chart-wrap"><canvas id="chart-dnt-${survey.id}-${qi}"></canvas></div></div>
+      </div>
+      <table class="results-table"><thead><tr><th>Option</th><th>Votes</th><th>%</th></tr></thead><tbody>${rows}</tbody></table>
+    </div>`;
+  }).join('<div style="height:1px;background:var(--border);margin:1rem 0"></div>');
+  return sections;
+}
+
+function drawSurveyCharts(survey){
+  const COLORS = ['#d4af37','#f0cd60','#4eb8ff','#d4843a','#c44eff','#e05555','#b8960c','#f5e49c'];
+  const grid='rgba(212,175,55,0.07)', tick='#8a8070', ff="'DM Sans',sans-serif";
+  (survey.questions||[]).forEach((q, qi) => {
+    const labels = (q.options||[]).map(o=>o.option_text);
+    const data   = (q.options||[]).map(o=>o.vote_count||0);
+    const colors = (q.options||[]).map((_,i)=>COLORS[i%COLORS.length]);
+    const barCtx = document.getElementById('chart-bar-'+survey.id+'-'+qi);
+    if(barCtx) new Chart(barCtx,{type:'bar',data:{labels,datasets:[{data,backgroundColor:colors,borderRadius:5,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:grid},ticks:{color:tick,font:{family:ff,size:10},maxRotation:25}},y:{grid:{color:grid},ticks:{color:tick,font:{family:ff,size:10},precision:0},beginAtZero:true}}}});
+    const dCtx = document.getElementById('chart-dnt-'+survey.id+'-'+qi);
+    if(dCtx) new Chart(dCtx,{type:'doughnut',data:{labels,datasets:[{data,backgroundColor:colors,borderWidth:2,borderColor:'#181818'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{position:'right',labels:{color:tick,font:{family:ff,size:10},padding:8,boxWidth:10}}}}});
+  });
+}
 function switchTab(pollId, tab, btn){
   document.querySelectorAll(`#report-${pollId} .report-tab`).forEach(t=>t.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('tab-charts-'+pollId).style.display   = tab==='charts'   ? '' : 'none';
   document.getElementById('tab-insights-'+pollId).style.display = tab==='insights' ? '' : 'none';
+  currentInsightType = document.getElementById('report-'+pollId)?.dataset?.itemtype || 'poll';
 }
 
 // ── Load AI insights ───────────────────────────────────────────
@@ -423,7 +462,7 @@ async function loadInsights(pollId, force=false){
   </div>`;
 
   try{
-    const url = API+'/polls/'+pollId+'/insights'+(force?'?regenerate=1':'');
+    const url = API+'/'+(type==='survey'?'surveys':'polls')+'/'+pollId+'/insights'+(force?'?regenerate=1':'');
     const res = await fetch(url, {headers:authHeaders()});
     if(!res.ok){ const e=await res.json().catch(()=>({})); throw new Error(e.error||'Failed: '+res.status); }
     const {insights, cached, generated_at} = await res.json();
@@ -534,7 +573,7 @@ function renderInsights(pollId, raw, cached, generatedAt){
     <div class="insights-meta">
       <span class="ai-badge" style="font-size:10px">${cached?'Cached':'Fresh'}</span>
       Generated ${genDate}
-      <button class="btn btn-sm" style="margin-left:auto" onclick="loadInsights('${pollId}',true)">↺ Regenerate</button>
+      <button class="btn btn-sm" style="margin-left:auto" onclick="loadInsights('',currentInsightType,true)">↺ Regenerate</button>
     </div>`;
 }
 
@@ -550,7 +589,7 @@ function renderLegacyInsights(text, cached, generatedAt, pollId){
   return `<span class="ai-badge" style="margin-bottom:1rem;display:inline-flex">✦ Pollytics Analysis</span>
     <div style="font-size:14px;line-height:1.8;color:var(--text)">${html}</div>
     <div class="insights-meta">${cached?'Cached':'Fresh'} · ${genDate}
-      <button class="btn btn-sm" style="margin-left:10px" onclick="loadInsights('${pollId}',true)">↺ Regenerate</button>
+      <button class="btn btn-sm" style="margin-left:10px" onclick="loadInsights('',currentInsightType,true)">↺ Regenerate</button>
     </div>`;
 }
 

@@ -337,17 +337,24 @@
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 11L5 7L9 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
       All polls
     </button>
-    <div style="font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;letter-spacing:-.03em;margin-bottom:.35rem;">Create a <span style="color:var(--accent)">poll</span></div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:1.75rem;">Add one or more questions — each with its own options and image</p>
+    <div style="font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;letter-spacing:-.03em;margin-bottom:.35rem;">Create <span style="color:var(--accent)" id="create-type-label">a poll</span></div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:1.25rem;" id="create-type-sub">One question, multiple answer options</p>
 
-    <!-- Poll-level fields -->
+    <!-- Poll / Survey toggle -->
+    <div style="display:flex;gap:8px;margin-bottom:1.75rem;">
+      <button id="toggle-poll" class="btn btn-gold btn-sm" onclick="setCreateType('poll')">🗳️ Poll</button>
+      <button id="toggle-survey" class="btn btn-sm" onclick="setCreateType('survey')">📋 Survey</button>
+      <span style="font-size:12px;color:var(--muted);align-self:center;margin-left:4px" id="create-type-hint">Single question with options</span>
+    </div>
+
+    <!-- Shared fields -->
     <div class="form-group">
-      <label class="form-label">Poll Title <span style="color:var(--danger)">*</span></label>
-      <input id="form-title" class="form-input" type="text" placeholder="Give your poll a name (shown on the card)" maxlength="200"/>
+      <label class="form-label" id="label-title">Question <span style="color:var(--danger)">*</span></label>
+      <input id="form-title" class="form-input" type="text" placeholder="What would you like to ask?" maxlength="200"/>
     </div>
     <div class="form-group">
       <label class="form-label">Description <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted);font-size:11px;">(optional)</span></label>
-      <textarea id="form-desc" class="form-input" placeholder="Add context about this poll…" rows="2"></textarea>
+      <textarea id="form-desc" class="form-input" placeholder="Add context…" rows="2"></textarea>
     </div>
     <div class="form-group">
       <label class="form-label">Cover Image <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted);font-size:11px;">(optional)</span></label>
@@ -365,14 +372,14 @@
     <div class="form-group">
       <label class="form-label">End Date & Time <span style="color:var(--danger)">*</span></label>
       <input id="form-enddate" class="form-input" type="datetime-local"/>
-      <div style="font-size:11px;color:var(--muted);margin-top:5px;">Poll closes automatically. Results move to your dashboard.</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:5px;">Closes automatically. Results move to your dashboard.</div>
     </div>
 
-    <!-- Questions container -->
+    <!-- Questions container (poll = 1 block, survey = multiple) -->
     <div id="questions-container"></div>
 
-    <!-- Add question button -->
-    <button class="add-question-btn" onclick="addQuestion()">
+    <!-- Add question button — only shown for surveys -->
+    <button class="add-question-btn" id="add-question-btn" onclick="addQuestion()" style="display:none;">
       <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       Add another question
     </button>
@@ -380,8 +387,8 @@
     <div id="form-msg"></div>
     <div class="form-actions">
       <button class="btn" onclick="showList()">Cancel</button>
-      <button class="btn btn-gold" onclick="submitPoll()">
-        Publish poll
+      <button class="btn btn-gold" id="publish-btn" onclick="submitCreate()">
+        Publish
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M6 2l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
     </div>
@@ -393,8 +400,8 @@
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 11L5 7L9 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
       All polls
     </button>
-    <div style="font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;letter-spacing:-.03em;margin-bottom:.35rem;">My <span style="color:var(--accent)">polls</span></div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:1.75rem;">Manage polls you've created</p>
+    <div style="font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;letter-spacing:-.03em;margin-bottom:.35rem;">My <span style="color:var(--accent)">polls & surveys</span></div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:1.75rem;">Manage everything you've created</p>
     <div id="admin-polls-container"></div>
   </div>
 
@@ -467,9 +474,10 @@ async function apiDelete(path){ const r=await fetch(API_BASE+path,{method:'DELET
 function getVotedPolls(){ try{ return JSON.parse(localStorage.getItem('ps_voted')||'{}'); }catch{ return {}; } }
 function setVoted(id,optId){ const v=getVotedPolls(); v[id]=optId; localStorage.setItem('ps_voted',JSON.stringify(v)); }
 
-// Normalize API poll to app shape
+// Normalize poll
 function normalizePoll(raw){
   return {
+    type: 'poll',
     id: raw.id, question: raw.question, desc: raw.description||'',
     image_url: raw.image_url||'', end_date: raw.end_date||null,
     is_concluded: raw.is_concluded||false,
@@ -477,11 +485,32 @@ function normalizePoll(raw){
     options: (raw.options||[]).map(o=>({id:o.id,text:o.option_text,votes:Number(o.vote_count)||0})),
   };
 }
-async function getData(){ return { polls: (await apiGet('/polls')).map(normalizePoll) }; }
-async function getPollById(id){ return normalizePoll(await apiGet('/polls/'+id)); }
-async function createPollInDB(q,desc,opts,endDate,imageUrl){ return normalizePoll(await apiPost('/polls',{question:q,description:desc,options:opts,end_date:endDate,image_url:imageUrl})); }
+
+// Normalize survey
+function normalizeSurvey(raw){
+  return {
+    type: 'survey',
+    id: raw.id, title: raw.title, desc: raw.description||'',
+    image_url: raw.image_url||'', end_date: raw.end_date||null,
+    is_concluded: raw.is_concluded||false,
+    total_responses: raw.total_responses||0,
+    createdAt: raw.created_at ? new Date(raw.created_at).getTime() : Date.now(),
+    questions: (raw.questions||[]).map(q=>({
+      id: q.id, text: q.question, position: q.position,
+      options: (q.options||[]).map(o=>({id:o.id,text:o.option_text,votes:Number(o.vote_count)||0})),
+      total: (q.options||[]).reduce((s,o)=>s+Number(o.vote_count||0),0),
+    })),
+  };
+}
+async function getData(){ return { polls: await apiGet('/feed') }; }
+async function getPollById(id){ return apiGet('/polls/'+id); }
+async function getSurveyById(id){ return apiGet('/surveys/'+id); }
+async function createPollInDB(q,desc,opts,endDate,imageUrl){ return apiPost('/polls',{question:q,description:desc,options:opts,end_date:endDate,image_url:imageUrl}); }
+async function createSurveyInDB(title,desc,questions,endDate,imageUrl){ return apiPost('/surveys',{title,description:desc,questions,end_date:endDate,image_url:imageUrl}); }
 async function submitVote(pid,oid){ return apiPost('/polls/'+pid+'/vote',{option_id:oid}); }
+async function submitSurveyVote(sid,answers){ return apiPost('/surveys/'+sid+'/vote',{answers}); }
 async function deletePollFromDB(id){ return apiDelete('/polls/'+id); }
+async function deleteSurveyFromDB(id){ return apiDelete('/surveys/'+id); }
 
 // ════════════════════════════════════
 //  IMAGE UPLOAD
@@ -577,39 +606,56 @@ async function renderList(){
   const container = document.getElementById('poll-list-container');
   const badge = document.getElementById('poll-count-badge');
   showLoading('poll-list-container');
-  let data;
-  try{ data = await getData(); }
-  catch(e){ badge.textContent='—'; showError('poll-list-container','Could not load polls. ('+e.message+')'); return; }
+  let items;
+  try{
+    const raw = await apiGet('/feed');
+    items = raw.map(r => r.type === 'survey' ? normalizeSurvey(r) : normalizePoll(r));
+  } catch(e){ badge.textContent='—'; showError('poll-list-container','Could not load. ('+e.message+')'); return; }
+
   const voted = getVotedPolls();
-  badge.textContent = data.polls.length+(data.polls.length===1?' poll':' polls');
-  const totalVotes = data.polls.reduce((s,p)=>s+p.options.reduce((a,o)=>a+o.votes,0),0);
-  document.getElementById('stat-polls').textContent = data.polls.length;
+  badge.textContent = items.length+(items.length===1?' item':' items');
+  const totalVotes = items.reduce((s,p)=>{
+    if(p.type==='poll') return s+p.options.reduce((a,o)=>a+o.votes,0);
+    return s+p.total_responses;
+  },0);
+  document.getElementById('stat-polls').textContent = items.length;
   document.getElementById('stat-votes').textContent = totalVotes > 999 ? (totalVotes/1000).toFixed(1)+'k' : totalVotes;
 
-  if(!data.polls.length){
-    container.innerHTML=`<div class="empty"><div class="empty-icon">📊</div><h3>No active polls yet</h3><p>Create the first one!</p></div>`;
+  if(!items.length){
+    container.innerHTML=`<div class="empty"><div class="empty-icon">📊</div><h3>No active polls or surveys yet</h3><p>Create the first one!</p></div>`;
     return;
   }
-  container.innerHTML = `<div class="poll-grid">${data.polls.map(poll=>{
-    const total = poll.options.reduce((s,o)=>s+o.votes,0);
-    const hasVoted = voted[poll.id];
-    const imgHtml = poll.image_url
-      ? `<img class="poll-card-img" src="${escHtml(poll.image_url)}" alt="" loading="lazy"/>`
-      : `<div class="poll-card-img-placeholder">${PLACEHOLDER_EMOJI[Math.abs(poll.id.charCodeAt(0)-97)%PLACEHOLDER_EMOJI.length]}</div>`;
-    return `<div class="poll-card" onclick="openPoll('${poll.id}')">
+
+  container.innerHTML = `<div class="poll-grid">${items.map(item=>{
+    const isSurvey = item.type === 'survey';
+    const total = isSurvey ? item.total_responses : item.options.reduce((s,o)=>s+o.votes,0);
+    const hasVoted = voted[item.id];
+    const imgHtml = item.image_url
+      ? `<img class="poll-card-img" src="${escHtml(item.image_url)}" alt="" loading="lazy"/>`
+      : `<div class="poll-card-img-placeholder">${isSurvey ? '📋' : PLACEHOLDER_EMOJI[Math.abs(item.id.charCodeAt(0)-97)%PLACEHOLDER_EMOJI.length]}</div>`;
+    const title   = isSurvey ? item.title : item.question;
+    const subline = isSurvey
+      ? `${item.questions.length} question${item.questions.length!==1?'s':''}`
+      : `${item.options.length} option${item.options.length!==1?'s':''}`;
+    const typeTag = isSurvey
+      ? `<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:999px;background:rgba(78,184,255,.1);color:#4eb8ff;border:1px solid rgba(78,184,255,.2)">Survey</span>`
+      : `<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:999px;background:rgba(212,175,55,.1);color:var(--accent);border:1px solid rgba(212,175,55,.2)">Poll</span>`;
+
+    return `<div class="poll-card" onclick="openItem('${item.id}','${item.type}')">
       ${imgHtml}
       <div class="poll-card-body">
-        <div class="poll-card-q">${escHtml(poll.question)}</div>
-        ${poll.desc ? `<div class="poll-card-desc">${escHtml(poll.desc)}</div>` : ''}
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:.35rem">${typeTag}</div>
+        <div class="poll-card-q">${escHtml(title)}</div>
+        ${item.desc ? `<div class="poll-card-desc">${escHtml(item.desc)}</div>` : ''}
         <div class="poll-card-meta">
-          <span>${poll.options.length} option${poll.options.length !== 1 ? 's' : ''}</span>
+          <span>${subline}</span>
           <div class="dot"></div>
           <span>${total} vote${total !== 1 ? 's' : ''}</span>
-          ${poll.end_date ? `<div class="dot"></div><span>Ends ${new Date(poll.end_date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</span>` : ''}
-          ${hasVoted ? `<div class="dot"></div><span class="voted">✓ Voted</span>` : `<div class="dot"></div><span>Vote now</span>`}
+          ${item.end_date ? `<div class="dot"></div><span>Ends ${new Date(item.end_date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</span>` : ''}
+          ${hasVoted ? `<div class="dot"></div><span class="voted">✓ Responded</span>` : `<div class="dot"></div><span>${isSurvey?'Take survey':'Vote now'}</span>`}
         </div>
         <div style="margin-top:.6rem">
-          <button class="share-btn" id="share-card-${poll.id}" onclick="event.stopPropagation();sharePoll('${poll.id}','share-card-${poll.id}')">
+          <button class="share-btn" id="share-card-${item.id}" onclick="event.stopPropagation();sharePoll('${item.id}','${item.type}','share-card-${item.id}')">
             <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M8 1.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zM1.5 6a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0zM8 7.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zM3.1 6.65l2.85 1.7M5.95 3.65 3.1 5.35" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
             Share
           </button>
@@ -624,6 +670,12 @@ async function renderList(){
 //  VOTE VIEW
 // ════════════════════════════════════
 let currentPollId=null, selectedOptionId=null, currentPollData=null;
+let currentSurveyData=null, surveyAnswers={};
+
+async function openItem(id, type){
+  if(type==='survey') return openSurvey(id);
+  return openPoll(id);
+}
 
 async function openPoll(pollId){
   currentPollId=pollId; selectedOptionId=null; currentPollData=null;
@@ -715,9 +767,150 @@ async function castVote(){
 }
 
 // ════════════════════════════════════
-//  MULTI-QUESTION CREATE FORM
+//  SURVEY VOTE VIEW
 // ════════════════════════════════════
+async function openSurvey(surveyId){
+  currentSurveyData=null; surveyAnswers={};
+  showView('vote');
+  document.getElementById('vote-content').innerHTML=`<div class="spinner-wrap"><div class="spinner"></div><div style="margin-top:.6rem">Loading survey…</div></div>`;
+  try{
+    const raw = await getSurveyById(surveyId);
+    currentSurveyData = normalizeSurvey(raw);
+    renderSurveyView();
+  } catch(e){
+    document.getElementById('vote-content').innerHTML=`<button class="back-btn" onclick="showList()">← All polls</button><div class="result-msg error">Failed to load survey: ${e.message}</div>`;
+  }
+}
+
+function renderSurveyView(){
+  const survey = currentSurveyData;
+  if(!survey){ showList(); return; }
+  const voted = getVotedPolls();
+  const hasVoted = !!voted[survey.id];
+  const shareUrl = getPollUrl(survey.id, 'survey');
+
+  const imgHtml = survey.image_url
+    ? `<img class="vote-poll-img" src="${escHtml(survey.image_url)}" alt=""/>`
+    : `<div class="vote-poll-img-placeholder">📋</div>`;
+
+  const questionsHtml = survey.questions.map((q, qi) => {
+    const total = hasVoted ? q.total : 0;
+    const maxV  = hasVoted ? Math.max(...q.options.map(o=>o.votes), 1) : 1;
+    const myAnswer = surveyAnswers[q.id] || (hasVoted ? voted[survey.id+':'+q.id] : null);
+
+    const optsHtml = q.options.map(opt => {
+      const pct     = total > 0 ? Math.round((opt.votes/total)*100) : 0;
+      const isWinner= hasVoted && opt.votes === maxV && total > 0;
+      const isSel   = !hasVoted && surveyAnswers[q.id] === opt.id;
+      const isMyVote= hasVoted && voted[survey.id+':'+q.id] === opt.id;
+      return `<button class="option-btn${isSel?' selected':''}"
+        onclick="${hasVoted?'':(`selectSurveyOption('${q.id}','${opt.id}')`)}"
+        ${hasVoted?'disabled':''}>
+        ${hasVoted?`<div class="option-bar${isWinner?' winning':''}" style="width:${pct}%"></div>`:''}
+        <div class="option-inner">
+          <span class="option-text">${escHtml(opt.text)}</span>
+          <div class="option-right">
+            ${hasVoted?`<span class="option-pct">${pct}%</span>`:''}
+            ${hasVoted?`<span class="option-votes">${opt.votes} vote${opt.votes!==1?'s':''}</span>`:''}
+            ${(isSel||isMyVote)?`<div class="option-check">✓</div>`:''}
+          </div>
+        </div>
+      </button>`;
+    }).join('');
+
+    const answered = !!surveyAnswers[q.id];
+    return `<div class="question-block" style="margin-bottom:1.25rem;background:var(--surface2);border:1px solid ${answered||hasVoted?'var(--border2)':'var(--border)'};border-radius:var(--radius);padding:1.25rem">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.85rem">
+        <div style="font-family:'Syne',sans-serif;font-size:.8rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.06em">Question ${qi+1} of ${survey.questions.length}</div>
+        ${answered&&!hasVoted?`<span style="font-size:11px;color:var(--accent)">✓ Answered</span>`:''}
+      </div>
+      <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:1rem;line-height:1.4">${escHtml(q.text)}</div>
+      <div class="options-list" style="margin-bottom:0">${optsHtml}</div>
+    </div>`;
+  }).join('');
+
+  const allAnswered = survey.questions.every(q => !!surveyAnswers[q.id]);
+  const footerHtml = hasVoted
+    ? `<div class="vote-footer"><div class="total-votes"><strong>${survey.total_responses}</strong> response${survey.total_responses!==1?'s':''}</div><span class="tag tag-active">✓ Completed</span></div>
+       <div class="result-msg success">Your responses have been recorded. Results are shown above.</div>
+       <div style="display:flex;gap:10px;margin-top:1.25rem;flex-wrap:wrap">
+         <button class="btn btn-gold" onclick="showList()">← All polls</button>
+         ${isLoggedIn()?`<button class="btn" onclick="showCreate()"><svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Create another</button>`:''}
+       </div>`
+    : `<div class="vote-footer">
+        <div class="total-votes">${allAnswered?`<strong>All ${survey.questions.length}</strong> questions answered`:`<strong>${Object.keys(surveyAnswers).length}</strong> of <strong>${survey.questions.length}</strong> answered`}</div>
+        <button class="btn btn-gold" id="survey-submit-btn" onclick="castSurveyVote()" ${allAnswered?'':'disabled'} style="${allAnswered?'':'opacity:.4;cursor:default;'}">
+          ${allAnswered?'Submit responses':'Answer all questions first'}
+        </button>
+       </div>`;
+
+  document.getElementById('vote-content').innerHTML = `
+    <div class="share-bar">
+      <svg width="13" height="13" viewBox="0 0 12 12" fill="none" style="flex-shrink:0;color:var(--accent)"><path d="M8 1.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zM1.5 6a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0zM8 7.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zM3.1 6.65l2.85 1.7M5.95 3.65 3.1 5.35" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      <span class="share-bar-url">${shareUrl}</span>
+      <button class="share-btn" id="share-survey-btn" onclick="sharePoll('${survey.id}','survey','share-survey-btn')">Copy link</button>
+    </div>
+    ${imgHtml}
+    <div class="poll-question">${escHtml(survey.title)}</div>
+    ${survey.desc?`<div class="poll-subtitle">${escHtml(survey.desc)}</div>`:`<div class="poll-subtitle">${survey.questions.length} questions · complete all to submit</div>`}
+    <div style="margin-bottom:1rem">${questionsHtml}</div>
+    ${footerHtml}
+    <div id="vote-msg"></div>`;
+}
+
+function selectSurveyOption(questionId, optionId){
+  surveyAnswers[questionId] = optionId;
+  // Also track in voted map for visual state
+  renderSurveyView();
+}
+
+async function castSurveyVote(){
+  if(!currentSurveyData) return;
+  const btn = document.getElementById('survey-submit-btn');
+  if(btn){ btn.disabled=true; btn.textContent='Submitting…'; }
+  try{
+    const answers = Object.entries(surveyAnswers).map(([question_id, option_id]) => ({question_id, option_id}));
+    await submitSurveyVote(currentSurveyData.id, answers);
+    // Record each question answer in localStorage
+    const v = getVotedPolls();
+    v[currentSurveyData.id] = 'completed';
+    currentSurveyData.questions.forEach(q => {
+      if(surveyAnswers[q.id]) v[currentSurveyData.id+':'+q.id] = surveyAnswers[q.id];
+    });
+    localStorage.setItem('ps_voted', JSON.stringify(v));
+    // Refresh from server
+    const raw = await getSurveyById(currentSurveyData.id);
+    currentSurveyData = normalizeSurvey(raw);
+    renderSurveyView();
+  } catch(e){
+    const m = document.getElementById('vote-msg');
+    if(m) m.innerHTML=`<div class="result-msg error" style="margin-top:.85rem">${e.message}</div>`;
+    if(btn){ btn.disabled=false; btn.textContent='Submit responses'; }
+  }
+}
 let questionCount = 0;
+let createType = 'poll'; // 'poll' | 'survey'
+
+function setCreateType(type){
+  createType = type;
+  const isPoll = type === 'poll';
+  document.getElementById('create-type-label').textContent = isPoll ? 'a poll' : 'a survey';
+  document.getElementById('create-type-sub').textContent   = isPoll ? 'One question, multiple answer options' : 'Multiple questions under one submission';
+  document.getElementById('create-type-hint').textContent  = isPoll ? 'Single question with options' : 'Multiple questions, one submission per respondent';
+  document.getElementById('label-title').innerHTML         = (isPoll ? 'Question' : 'Survey Title') + ' <span style="color:var(--danger)">*</span>';
+  document.getElementById('form-title').placeholder        = isPoll ? 'What would you like to ask?' : 'Give your survey a name';
+  document.getElementById('toggle-poll').className         = isPoll ? 'btn btn-gold btn-sm' : 'btn btn-sm';
+  document.getElementById('toggle-survey').className       = isPoll ? 'btn btn-sm' : 'btn btn-gold btn-sm';
+  document.getElementById('add-question-btn').style.display = isPoll ? 'none' : '';
+  document.getElementById('publish-btn').innerHTML         = isPoll
+    ? 'Publish poll <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M6 2l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    : 'Publish survey <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M6 2l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  // Reset questions for the new type
+  document.getElementById('questions-container').innerHTML = '';
+  questionCount = 0;
+  addQuestion();
+  if(!isPoll) addQuestion(); // surveys start with 2 questions
+}
 
 function addQuestion(){
   questionCount++;
@@ -818,15 +1011,17 @@ function resetForm(){
   if(area) area.classList.remove('has-img');
   if(status) status.innerHTML='';
   document.getElementById('img-file-input').value='';
-  addQuestion(); // start with one question block
+  // Always reset to poll mode
+  createType = 'poll';
+  setCreateType('poll');
 }
 
-async function submitPoll(){
+async function submitCreate(){
   const title   = document.getElementById('form-title').value.trim();
   const desc    = document.getElementById('form-desc').value.trim();
   const endDate = document.getElementById('form-enddate').value;
 
-  if(!title){ showMsg('Please enter a poll title.','error'); return; }
+  if(!title){ showMsg('Please enter a '+(createType==='poll'?'question':'survey title')+'.','error'); return; }
   if(!endDate){ showMsg('Please set an end date.','error'); return; }
   if(new Date(endDate) <= new Date()){ showMsg('End date must be in the future.','error'); return; }
 
@@ -843,110 +1038,78 @@ async function submitPoll(){
     questions.push({ question: qtext, options: opts });
   }
 
-  showMsg(`Publishing ${questions.length} poll${questions.length>1?'s':''}…`,'warn');
+  if(createType === 'survey' && questions.length < 2){
+    showMsg('A survey needs at least 2 questions. Use "Poll" for a single question.','error');
+    return;
+  }
+
+  showMsg(`Publishing ${createType}…`,'warn');
 
   try{
-    const created = [];
-    for(let i=0; i<questions.length; i++){
-      const q = questions[i];
-      // Title becomes "Poll Title (1/3): Question text" for multi-question polls
-      const pollQuestion = questions.length > 1 ? `${title} (${i+1}/${questions.length}): ${q.question}` : q.question;
-      const poll = await createPollInDB(
-        pollQuestion,
-        i===0 ? desc : '',
-        q.options,
-        endDate,
-        i===0 ? pendingImageUrl : ''
-      );
-      created.push(poll);
+    let created;
+    if(createType === 'survey'){
+      created = await createSurveyInDB(title, desc, questions, endDate, pendingImageUrl);
+      showMsg('Survey published!','success');
+      setTimeout(()=>{ currentSurveyData=normalizeSurvey(created); surveyAnswers={}; showView('vote'); renderSurveyView(); }, 600);
+    } else {
+      // Poll — single question
+      const q = questions[0];
+      created = await createPollInDB(title, desc, q.options, endDate, pendingImageUrl);
+      showMsg('Poll published!','success');
+      setTimeout(()=>{
+        showCreationSuccess([normalizePoll(created)]);
+      }, 600);
     }
-    showMsg(`Poll${created.length>1?'s':''}  created!`,'success');
-    setTimeout(()=>{
-      // Show success screen with options instead of jumping straight to vote
-      showCreationSuccess(created);
-    }, 600);
-  } catch(e){ showMsg('Failed to create poll: '+e.message,'error'); }
-}
-
-function showCreationSuccess(created){
-  // Switch to vote view but render a success landing instead
-  showView('vote');
-  const multi = created.length > 1;
-  const pollLinks = multi
-    ? `<div style="display:flex;flex-direction:column;gap:8px;margin:1.25rem 0">
-        ${created.map((p,i)=>`
-          <button class="btn" style="justify-content:flex-start;text-align:left" onclick="openPoll('${p.id}')">
-            <span style="color:var(--accent);font-weight:700;flex-shrink:0">Q${i+1}</span>
-            ${escHtml(p.question.replace(/^.+?\): /,''))}
-          </button>`).join('')}
-      </div>`
-    : '';
-
-  document.getElementById('vote-content').innerHTML = `
-    <div style="text-align:center;padding:2.5rem 1rem 1rem">
-      <div style="font-size:3rem;margin-bottom:1rem">🎉</div>
-      <div style="font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;letter-spacing:-.03em;margin-bottom:.5rem">
-        Poll${multi?'s':''} published!
-      </div>
-      <p style="font-size:14px;color:var(--muted);margin-bottom:1.75rem;max-width:360px;margin-left:auto;margin-right:auto">
-        ${multi
-          ? `${created.length} questions are now live and ready to collect votes.`
-          : 'Your poll is now live and ready to collect votes.'}
-      </p>
-      ${pollLinks}
-      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:1.25rem">
-        <button class="btn btn-gold btn-lg" onclick="openPoll('${created[0].id}')">
-          View poll →
-        </button>
-        <button class="btn btn-lg" onclick="showCreate()">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          Create another poll
-        </button>
-        <button class="btn btn-lg" onclick="showList()">Back to all polls</button>
-      </div>
-    </div>`;
+  } catch(e){ showMsg('Failed to publish: '+e.message,'error'); }
 }
 
 // ════════════════════════════════════
 //  ADMIN VIEW
 // ════════════════════════════════════
-let pendingDeleteId=null;
+let pendingDeleteId=null, pendingDeleteType='poll';
 async function renderAdmin(){
   const container=document.getElementById('admin-polls-container');
   showLoading('admin-polls-container');
-  let data;
-  try{ data=await getData(); }
-  catch(e){ showError('admin-polls-container','Could not load polls: '+e.message); return; }
-  const myId=getAdmin()?.id;
-  const myPolls=data.polls.filter(p=>true); // server already filters by admin for concluded; for active show all owned
-  if(!data.polls.length){
-    container.innerHTML=`<div class="empty"><div class="empty-icon">🔧</div><h3>No polls yet</h3><p>Create your first poll</p></div>`;
+  let items;
+  try{
+    const raw = await apiGet('/feed');
+    items = raw.map(r => r.type==='survey' ? normalizeSurvey(r) : normalizePoll(r));
+  } catch(e){ showError('admin-polls-container','Could not load: '+e.message); return; }
+  if(!items.length){
+    container.innerHTML=`<div class="empty"><div class="empty-icon">🔧</div><h3>Nothing yet</h3><p>Create your first poll or survey</p></div>`;
     return;
   }
-  container.innerHTML=data.polls.map(poll=>{
-    const total=poll.options.reduce((s,o)=>s+o.votes,0);
+  container.innerHTML=items.map(item=>{
+    const isSurvey = item.type==='survey';
+    const title    = isSurvey ? item.title : item.question;
+    const total    = isSurvey ? item.total_responses : item.options.reduce((s,o)=>s+o.votes,0);
+    const typeTag  = isSurvey ? '📋 Survey' : '🗳️ Poll';
     return `<div class="admin-panel">
       <div class="admin-poll-header">
-        <div class="admin-poll-q">${escHtml(poll.question)}</div>
+        <div class="admin-poll-q"><span style="font-size:10px;color:var(--muted);margin-right:6px">${typeTag}</span>${escHtml(title)}</div>
         <div class="admin-poll-actions">
-          <button class="btn btn-sm" onclick="openPoll('${poll.id}')">View</button>
-          <button class="btn btn-sm" style="border-color:rgba(224,85,85,.3);color:var(--danger)" onclick="confirmDelete('${poll.id}')">Delete</button>
+          <button class="btn btn-sm" onclick="openItem('${item.id}','${item.type}')">View</button>
+          <button class="btn btn-sm" style="border-color:rgba(224,85,85,.3);color:var(--danger)" onclick="confirmDelete('${item.id}','${item.type}')">Delete</button>
         </div>
       </div>
       <div class="admin-mini-bar">
-        <span class="mini-opt"><strong>${total}</strong> votes</span>
-        ${poll.options.map(o=>`<span class="mini-opt">${escHtml(o.text)}: <strong>${o.votes}</strong></span>`).join('')}
+        <span class="mini-opt"><strong>${total}</strong> ${isSurvey?'responses':'votes'}</span>
+        ${isSurvey
+          ? item.questions.map(q=>`<span class="mini-opt">${escHtml(q.text.substring(0,30))}…</span>`).join('')
+          : item.options.map(o=>`<span class="mini-opt">${escHtml(o.text)}: <strong>${o.votes}</strong></span>`).join('')}
       </div>
     </div>`;
   }).join('');
 }
-function confirmDelete(id){ pendingDeleteId=id; document.getElementById('delete-modal').classList.add('open'); document.getElementById('confirm-delete-btn').onclick=()=>deletePoll(id); }
+function confirmDelete(id,type='poll'){ pendingDeleteId=id; pendingDeleteType=type; document.getElementById('delete-modal').classList.add('open'); document.getElementById('confirm-delete-btn').onclick=()=>deleteItem(id,type); }
 function closeModal(){ document.getElementById('delete-modal').classList.remove('open'); pendingDeleteId=null; }
-async function deletePoll(id){
+async function deleteItem(id, type){
   const btn=document.getElementById('confirm-delete-btn');
   if(btn){ btn.disabled=true; btn.textContent='Deleting…'; }
-  try{ await deletePollFromDB(id); }
-  catch(e){ alert('Delete failed: '+e.message); if(btn){ btn.disabled=false; btn.textContent='Delete'; } return; }
+  try{
+    if(type==='survey') await deleteSurveyFromDB(id);
+    else await deletePollFromDB(id);
+  } catch(e){ alert('Delete failed: '+e.message); if(btn){ btn.disabled=false; btn.textContent='Delete'; } return; }
   closeModal(); renderAdmin();
 }
 document.getElementById('delete-modal').addEventListener('click',function(e){ if(e.target===this) closeModal(); });
@@ -993,8 +1156,49 @@ function sharePoll(pollId, btnId){
   }
 }
 
-// Reset URL hash when going back to list
-const _origShowList = showList;
+function getPollUrl(id, type='poll'){
+  return window.location.origin + window.location.pathname + '#' + type + '/' + id;
+}
+
+function sharePoll(id, type='poll', btnId){
+  const url = getPollUrl(id, type);
+  const btn = document.getElementById(btnId);
+  history.replaceState(null, '', '#' + type + '/' + id);
+  const doCopy = () => {
+    if(btn){
+      const orig = btn.innerHTML;
+      btn.classList.add('copied');
+      btn.innerHTML = '✓ Copied!';
+      setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = orig; }, 2000);
+    }
+  };
+  if(navigator.clipboard){ navigator.clipboard.writeText(url).then(doCopy); }
+  else {
+    const ta=document.createElement('textarea'); ta.value=url; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); doCopy();
+  }
+}
+
+function showCreationSuccess(created){
+  showView('vote');
+  document.getElementById('vote-content').innerHTML = `
+    <div style="text-align:center;padding:2.5rem 1rem 1rem">
+      <div style="font-size:3rem;margin-bottom:1rem">🎉</div>
+      <div style="font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;letter-spacing:-.03em;margin-bottom:.5rem">Poll published!</div>
+      <p style="font-size:14px;color:var(--muted);margin-bottom:1.75rem;max-width:360px;margin-left:auto;margin-right:auto">
+        Your poll is now live and ready to collect votes.
+      </p>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:1.25rem">
+        <button class="btn btn-gold btn-lg" onclick="openPoll('${created[0].id}')">View poll →</button>
+        <button class="btn btn-lg" onclick="showCreate()">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          Create another
+        </button>
+        <button class="btn btn-lg" onclick="showList()">Back to all</button>
+      </div>
+    </div>`;
+}
+
 // Override showList to clear hash
 function showList(){
   history.replaceState(null, '', window.location.pathname);
@@ -1004,10 +1208,10 @@ function showList(){
 
 updateAuthUI();
 
-// Handle direct poll share links e.g. /#poll/uuid
-const hashMatch = window.location.hash.match(/^#poll\/([a-f0-9-]{36})$/i);
+// Deep link: /#poll/uuid or /#survey/uuid
+const hashMatch = window.location.hash.match(/^#(poll|survey)\/([a-f0-9-]{36})$/i);
 if(hashMatch){
-  openPoll(hashMatch[1]);
+  openItem(hashMatch[2], hashMatch[1]);
 } else {
   renderList();
 }
