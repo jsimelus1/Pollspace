@@ -773,6 +773,8 @@ async function openItem(id, type){
 }
 
 async function openPoll(pollId){
+  // Update Polly context to this poll
+  window.POLLY_CONTEXT = { type: 'poll', id: pollId };
   currentPollId=pollId; selectedOptionId=null; currentPollData=null;
   showView('vote');
   document.getElementById('vote-content').innerHTML=`<div class="spinner-wrap"><div class="spinner"></div><div style="margin-top:.6rem">Loading poll…</div></div>`;
@@ -865,6 +867,8 @@ async function castVote(){
 //  SURVEY VOTE VIEW
 // ════════════════════════════════════
 async function openSurvey(surveyId){
+  // Update Polly context to this survey
+  window.POLLY_CONTEXT = { type: 'survey', id: surveyId };
   currentSurveyData=null; surveyAnswers={};
   showView('vote');
   document.getElementById('vote-content').innerHTML=`<div class="spinner-wrap"><div class="spinner"></div><div style="margin-top:.6rem">Loading survey…</div></div>`;
@@ -1297,6 +1301,7 @@ function showCreationSuccess(created){
 // Override showList to clear hash
 function showList(){
   history.replaceState(null, '', window.location.pathname);
+  window.POLLY_CONTEXT = null; // clear poll-specific context
   renderList();
   showView('list');
 }
@@ -1311,5 +1316,7 @@ if(hashMatch){
   renderList();
 }
 </script>
+<!-- Polly Chatbot -->
+<script src="/chatbot.js"></script>
 </body>
 </html>

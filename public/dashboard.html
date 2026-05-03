@@ -653,5 +653,10 @@ function renderLegacyInsights(text, cached, generatedAt, pollId){
 
 loadDashboard();
 </script>
+<!-- Polly Chatbot — loads with full dashboard data context -->
+<script>
+  window.POLLY_CONTEXT = { type: 'dashboard', id: null };
+</script>
+<script src="/chatbot.js"></script>
 </body>
 </html>
