@@ -654,6 +654,138 @@ app.get('/api/concluded', requireAuth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ════════════════════════════════════════════════════════════
+//  CHATBOT — Claude-powered analysis assistant
+//  POST /api/chat
+//  Body: { messages: [{role, content}], context?: 'poll'|'survey'|null, context_id?: uuid }
+//  Auth: optional — public users get general help, admins get data-aware responses
+// ════════════════════════════════════════════════════════════
+app.post('/api/chat', async (req, res) => {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return res.status(503).json({ error: 'AI service not configured' });
+
+  const { messages, context_type, context_id } = req.body;
+  if (!Array.isArray(messages) || !messages.length)
+    return res.status(400).json({ error: 'messages array is required' });
+
+  // Validate message format
+  const validMessages = messages.filter(m =>
+    (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string' && m.content.trim()
+  );
+  if (!validMessages.length)
+    return res.status(400).json({ error: 'No valid messages' });
+
+  // Optional auth — enrich with poll/survey data if admin provides context
+  let contextBlock = '';
+  const authHeader = req.headers['authorization'] || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  let admin = null;
+  if (token) {
+    try { admin = jwt.verify(token, JWT_SECRET); } catch {}
+  }
+
+  if (admin && context_type && context_id) {
+    try {
+      if (context_type === 'poll') {
+        const { rows } = await pool.query(
+          `SELECT id, question, description, end_date, created_by, created_at FROM polls WHERE id=$1`,
+          [context_id]
+        );
+        if (rows.length && rows[0].created_by === admin.id) {
+          const poll = await buildPoll(rows[0]);
+          const opts = [...poll.options].sort((a,b) => b.vote_count - a.vote_count);
+          contextBlock = `\n\nCURRENT POLL DATA:\nQuestion: "${poll.question}"\n${poll.description ? `Description: ${poll.description}\n` : ''}Total votes: ${poll.total_votes}\nStatus: ${poll.is_concluded ? 'Concluded' : 'Active'}\nResults:\n${opts.map((o,i) => {
+            const pct = poll.total_votes > 0 ? ((o.vote_count/poll.total_votes)*100).toFixed(1) : '0';
+            return `  ${i+1}. "${o.option_text}" — ${o.vote_count} votes (${pct}%)`;
+          }).join('\n')}`;
+        }
+      } else if (context_type === 'survey') {
+        const { rows } = await pool.query(
+          `SELECT id, title, description, end_date, created_by, created_at FROM surveys WHERE id=$1`,
+          [context_id]
+        );
+        if (rows.length && rows[0].created_by === admin.id) {
+          const survey = await buildSurvey(rows[0]);
+          contextBlock = `\n\nCURRENT SURVEY DATA:\nTitle: "${survey.title}"\n${survey.description ? `Description: ${survey.description}\n` : ''}Total respondents: ${survey.total_responses}\nStatus: ${survey.is_concluded ? 'Concluded' : 'Active'}\nQuestions:\n${survey.questions.map((q, qi) => {
+            const sorted = [...q.options].sort((a,b) => b.vote_count - a.vote_count);
+            const total = q.vote_count || 0;
+            return `  Q${qi+1}: "${q.question}"\n${sorted.map((o,i) => {
+              const pct = total > 0 ? ((o.vote_count/total)*100).toFixed(1) : '0';
+              return `    ${i+1}. "${o.option_text}" — ${o.vote_count} votes (${pct}%)`;
+            }).join('\n')}`;
+          }).join('\n')}`;
+        }
+      } else if (context_type === 'dashboard') {
+        // Load all concluded items for this admin
+        const [{ rows: pollRows }, { rows: surveyRows }] = await Promise.all([
+          pool.query(`SELECT id, question, description, image_url, end_date, created_by, created_at FROM polls WHERE end_date IS NOT NULL AND end_date <= NOW() AND created_by=$1 ORDER BY end_date DESC LIMIT 10`, [admin.id]),
+          pool.query(`SELECT id, title, description, image_url, end_date, created_by, created_at FROM surveys WHERE end_date IS NOT NULL AND end_date <= NOW() AND created_by=$1 ORDER BY end_date DESC LIMIT 10`, [admin.id]),
+        ]);
+        const [polls, surveys] = await Promise.all([
+          Promise.all(pollRows.map(buildPoll)),
+          Promise.all(surveyRows.map(buildSurvey)),
+        ]);
+        const all = [...polls, ...surveys].sort((a, b) => new Date(b.end_date) - new Date(a.end_date));
+        if (all.length) {
+          contextBlock = `\n\nDASHBOARD DATA (${admin.name}'s concluded polls & surveys):\n` + all.map(item => {
+            if (item.type === 'poll') {
+              const opts = [...item.options].sort((a,b) => b.vote_count - a.vote_count);
+              return `Poll: "${item.question}" — ${item.total_votes} votes\n${opts.map(o => {
+                const pct = item.total_votes > 0 ? ((o.vote_count/item.total_votes)*100).toFixed(1) : '0';
+                return `  • "${o.option_text}": ${o.vote_count} (${pct}%)`;
+              }).join('\n')}`;
+            } else {
+              return `Survey: "${item.title}" — ${item.total_responses} responses, ${item.questions.length} questions`;
+            }
+          }).join('\n\n');
+        }
+      }
+    } catch (e) {
+      console.error('Chat context fetch error:', e.message);
+    }
+  }
+
+  const systemPrompt = `You are Polly, the friendly AI assistant for Pollytics — a polling and analytics platform. Your role is to help users understand their poll and survey data, provide analysis, and make actionable recommendations for stakeholders.
+
+Key behaviors:
+- Be concise, professional, and data-driven
+- When poll/survey data is provided, reference specific numbers and percentages
+- Offer actionable insights and stakeholder recommendations when asked
+- Help users understand trends, patterns, and what the data means for their decisions
+- If no data context is provided, help users understand how to use Pollytics features
+- Always be encouraging and constructive
+- Format responses with clear structure when presenting analysis (use bullet points, bold key findings)
+- Keep responses focused — don't pad with unnecessary text${contextBlock ? '\n\nYou have access to the following data for this conversation:' + contextBlock : ''}`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-4-5',
+        max_tokens: 1024,
+        system: systemPrompt,
+        messages: validMessages.map(m => ({ role: m.role, content: m.content })),
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error?.message || 'Claude API error: ' + response.status);
+    }
+
+    const data = await response.json();
+    res.json({ reply: data.content[0].text });
+  } catch (e) {
+    console.error('Chat error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Health
 app.get('/api/health', async (req, res) => {
   try { await pool.query('SELECT 1'); res.json({ status: 'ok', db: 'connected' }); }
