@@ -4,6 +4,16 @@
 //   window.POLLY_CONTEXT = { type: 'poll'|'survey'|'dashboard', id: 'uuid' }
 
 (function() {
+  // Wait for DOM to be ready before injecting the chatbot
+  function init() {
+    if (!document.body) {
+      document.addEventListener('DOMContentLoaded', init);
+      return;
+    }
+    buildChatbot();
+  }
+
+  function buildChatbot() {
   const ACCENT  = '#d4af37';
   const BG      = '#0a0a0a';
   const SURFACE = '#181818';
@@ -344,6 +354,9 @@
       .replace(/^(.+)$/, '<p>$1</p>')
       .replace(/<p><\/p>/g, '');
   }
+
+  init(); // kick off the chatbot
+  } // end buildChatbot
 
   init();
 })();
