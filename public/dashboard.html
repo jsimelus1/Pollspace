@@ -4,6 +4,20 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Pollytics — Your Dashboard</title>
+  <!-- Auth guard runs before first paint — prevents flash -->
+  <script>
+    (function(){
+      var token = localStorage.getItem('ps_token');
+      if(!token){
+        location.replace('/login.html?redirect=/dashboard.html');
+      } else {
+        // Show body immediately once we know user is authed
+        document.addEventListener('DOMContentLoaded', function(){
+          document.body.style.visibility = 'visible';
+        });
+      }
+    })();
+  </script>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
@@ -17,7 +31,7 @@
       --radius:12px;--radius-sm:7px;
       --gold-glow:0 0 24px rgba(212,175,55,0.15);
     }
-    html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px}
+    html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;visibility:hidden}
     @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
     @keyframes spin{to{transform:rotate(360deg)}}
     @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.7)}}
@@ -244,7 +258,7 @@ const PLACEHOLDER_EMOJI = ['🗳️','📊','💬','🤔','⚡','🌟','🎯','�
 // ── Auth ──────────────────────────────────────────────────────
 const psToken = localStorage.getItem('ps_token');
 const psAdmin = (()=>{ try{ return JSON.parse(localStorage.getItem('ps_admin')); }catch{ return null; } })();
-if(!psToken){ location.href = '/login.html?redirect=/dashboard.html'; }
+// Token already validated in <head> — if we're here, user is authenticated
 
 function authHeaders(){ return {'Content-Type':'application/json','Authorization':'Bearer '+psToken}; }
 function signOut(){ localStorage.removeItem('ps_token'); localStorage.removeItem('ps_admin'); location.href='/login.html'; }
@@ -280,7 +294,7 @@ document.addEventListener('keydown', e => { if(e.key==='Escape') closeDrawer({})
 async function loadDashboard(){
   try{
     const res = await fetch(API+'/concluded', {headers:authHeaders()});
-    if(res.status===401){ location.href='/login.html?redirect=/dashboard.html'; return; }
+    if(res.status===401){ location.replace('/login.html?redirect=/dashboard.html'); return; }
     if(!res.ok) throw new Error('Request failed: '+res.status);
     const items = await res.json();
     renderStats(items);
