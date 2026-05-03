@@ -1495,24 +1495,38 @@ if(hashMatch){
       // Re-read context at send time so it's always fresh
       var liveCtx = window.POLLY_CONTEXT || null;
 
-      fetch('/api/chat', {
-        method: 'POST',
-        headers: headers,
-        body: JSON.stringify({
-          messages:     history.slice(-12),
-          context_type: liveCtx ? liveCtx.type : null,
-          context_id:   liveCtx ? liveCtx.id   : null
-        })
-      })
-      .then(function(res) { return res.json(); })
+      var payload = JSON.stringify({
+        messages:     history.slice(-12),
+        context_type: liveCtx ? liveCtx.type : null,
+        context_id:   liveCtx ? liveCtx.id   : null
+      });
+
+      function doFetch(attempt) {
+        return fetch('/api/chat', { method: 'POST', headers: headers, body: payload })
+          .then(function(res) {
+            if (!res.ok && attempt < 2) {
+              // Server may be waking up — wait 3s and retry once
+              return new Promise(function(resolve) { setTimeout(resolve, 3000); })
+                .then(function() { return doFetch(attempt + 1); });
+            }
+            return res.json();
+          });
+      }
+
+      doFetch(1)
       .then(function(data) {
         hideTyping();
-        if (data.error) { addMsg('a', 'Sorry, something went wrong: ' + data.error); }
-        else            { addMsg('a', data.reply); }
+        if (data.error === 'AI service not configured') {
+          addMsg('a', 'The AI service needs its API key configured on Render. Go to Render dashboard → your service → Environment → add **ANTHROPIC_API_KEY**.');
+        } else if (data.error) {
+          addMsg('a', 'Something went wrong: ' + data.error + '. Please try again.');
+        } else {
+          addMsg('a', data.reply);
+        }
       })
       .catch(function(err) {
         hideTyping();
-        addMsg('a', 'Connection error. Please try again.');
+        addMsg('a', 'Could not reach the server. It may be waking up — please try again in a few seconds.');
       })
       .finally(function() {
         busy = false;
