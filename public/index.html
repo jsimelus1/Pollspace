@@ -109,13 +109,11 @@
     .hero-trust{font-size:11px;color:var(--muted2);margin-top:.85rem;display:flex;align-items:center;gap:6px}
     .hero-trust::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--success);flex-shrink:0}
     .hero-visual{
-      width:160px;height:160px;border-radius:50%;
-      background:radial-gradient(circle at 40% 40%, rgba(212,175,55,.18), rgba(212,175,55,.03));
-      border:1px solid var(--border2);
+      width:200px;height:200px;border-radius:16px;
+      background:transparent;
       display:flex;align-items:center;justify-content:center;
-      font-size:5rem;
-      box-shadow:var(--gold-glow);
       flex-shrink:0;
+      filter:drop-shadow(0 8px 32px rgba(212,175,55,0.25));
     }
 
     /* Stats */
@@ -355,7 +353,7 @@
         </div>
         <div class="hero-trust">No account needed to vote</div>
       </div>
-      <div class="hero-visual">🗳️</div>
+      <div class="hero-visual"><img src="/ballot_box.png" alt="Ballot Box" style="width:100%;height:100%;object-fit:contain;"/></div>
     </div>
 
     <!-- Stats -->
@@ -522,7 +520,8 @@ const CLOUDINARY_PRESET = 'pollspace_unsigned'; // ← create this preset in Clo
 const USE_CLOUDINARY    = true;
 
 // Generic placeholder image (used when no image is set)
-const PLACEHOLDER_EMOJI = ['🗳️','📊','💬','🤔','⚡','🌟','🎯','📝'];
+const PLACEHOLDER_IMG = '<img src="/ballot_box.png" alt="" style="width:70%;height:70%;object-fit:contain;opacity:.7"/>';
+const PLACEHOLDER_EMOJI = ['📊','💬','🤔','⚡','🌟','🎯','📝'];
 
 function getToken(){ return localStorage.getItem('ps_token'); }
 function getAdmin(){ try{ return JSON.parse(localStorage.getItem('ps_admin')); }catch{ return null; } }
@@ -727,7 +726,7 @@ async function renderList(){
     const hasVoted = voted[item.id];
     const imgHtml = item.image_url
       ? `<img class="poll-card-img" src="${escHtml(item.image_url)}" alt="" loading="lazy"/>`
-      : `<div class="poll-card-img-placeholder">${isSurvey ? '📋' : PLACEHOLDER_EMOJI[Math.abs(item.id.charCodeAt(0)-97)%PLACEHOLDER_EMOJI.length]}</div>`;
+      : `<div class="poll-card-img-placeholder">${isSurvey ? '📋' : PLACEHOLDER_IMG}</div>`;
     const title   = isSurvey ? item.title : item.question;
     const subline = isSurvey
       ? `${item.questions.length} question${item.questions.length!==1?'s':''}`
@@ -791,7 +790,7 @@ function renderVoteView(){
 
   const imgHtml = poll.image_url
     ? `<img class="vote-poll-img" src="${escHtml(poll.image_url)}" alt=""/>`
-    : `<div class="vote-poll-img-placeholder">${PLACEHOLDER_EMOJI[Math.abs(poll.id.charCodeAt(0)-97)%PLACEHOLDER_EMOJI.length]}</div>`;
+    : `<div class="vote-poll-img-placeholder">${PLACEHOLDER_IMG}</div>`;
 
   const optionsHtml = poll.options.map(opt=>{
     const pct=total>0?Math.round((opt.votes/total)*100):0;
